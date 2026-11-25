@@ -51,10 +51,42 @@ export class Data {
       db.collection('branches').createIndex({ tenantId: 1, code: 1 }, { unique: true }),
       db.collection('departments').createIndex({ tenantId: 1, branchId: 1, code: 1 }, { unique: true }),
       db.collection('patients').createIndex({ tenantId: 1, mrn: 1 }, { unique: true }),
-      db.collection('patients').createIndex({ tenantId: 1, branchId: 1, createdAt: -1 }),
+      db.collection('patients').createIndex({ tenantId: 1, branchIds: 1, createdAt: -1 }),
+      db.collection('patients').createIndex({ tenantId: 1, nameKeys: 1 }),
+      db.collection('patients').createIndex({ tenantId: 1, phone: 1 }),
+      db.collection('patients').createIndex({ tenantId: 1, 'identifiers.value': 1 }),
+      db.collection('patients').createIndex({ tenantId: 1, careTeam: 1 }),
+      db.collection('patients').createIndex({ tenantId: 1, mergedInto: 1 }, { sparse: true }),
+      db.collection('merge_requests').createIndex({ tenantId: 1, status: 1, createdAt: -1 }),
+      db.collection('consents').createIndex({ tenantId: 1, patientId: 1, recordedAt: -1 }),
+      db.collection('provider_schedules').createIndex({ tenantId: 1, providerId: 1, weekday: 1 }),
+      // No double-booking (spec §5.4): only active appointments hold the slot lock.
+      db.collection('appointments').createIndex(
+        { tenantId: 1, providerId: 1, startsAt: 1 },
+        { unique: true, partialFilterExpression: { slotLock: true }, name: 'one_active_per_provider_slot' },
+      ),
+      db.collection('appointments').createIndex({ tenantId: 1, branchId: 1, startsAt: 1 }),
+      db.collection('appointments').createIndex({ tenantId: 1, patientId: 1, startsAt: -1 }),
+      db.collection('encounters').createIndex({ tenantId: 1, patientId: 1, startedAt: -1 }),
+      db.collection('encounters').createIndex({ tenantId: 1, clinicianIds: 1, status: 1 }),
+      db.collection('encounters').createIndex({ tenantId: 1, appointmentId: 1 }, { unique: true, partialFilterExpression: { appointmentId: { $exists: true } } }),
+      db.collection('observations').createIndex({ tenantId: 1, patientId: 1, effectiveAt: -1 }),
+      db.collection('observations').createIndex({ tenantId: 1, encounterId: 1 }),
+      db.collection('clinical_notes').createIndex({ tenantId: 1, encounterId: 1, createdAt: 1 }),
+      db.collection('clinical_notes').createIndex({ tenantId: 1, patientId: 1, signedAt: -1 }),
+      db.collection('diagnoses').createIndex({ tenantId: 1, code: 1, certainty: 1, recordedAt: 1 }),
+      db.collection('diagnoses').createIndex({ tenantId: 1, encounterId: 1 }),
+      db.collection('diagnoses').createIndex({ tenantId: 1, patientId: 1, recordedAt: -1 }),
       db.collection('audit_events').createIndex({ seq: 1 }, { unique: true }),
       db.collection('audit_events').createIndex({ tenantId: 1, occurredAt: -1, actorId: 1 }),
     ]);
+  }
+
+  /** Brings every existing tenant up to the current index set (idempotent; run at startup). */
+  async migrateAllTenants(): Promise<number> {
+    const tenants = await this.control().collection('tenants').find({}, { projection: { dbName: 1 } }).toArray();
+    for (const t of tenants) await this.ensureTenantIndexes(this.tenant(t.dbName as string));
+    return tenants.length;
   }
 
   async close(): Promise<void> {

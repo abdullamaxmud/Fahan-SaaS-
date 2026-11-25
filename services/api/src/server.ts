@@ -6,6 +6,7 @@ import { Data } from './db/mongo';
 const log = pino({ level: 'info' });
 const config = loadConfig();
 const data = await Data.connect(config.mongoUri, config.controlDb);
+log.info({ tenants: await data.migrateAllTenants() }, 'tenant indexes up to date');
 const server = createApp({ data, config }, log).listen(config.port, () => {
   log.info({ port: config.port, env: config.env }, 'Fahan API listening');
 });

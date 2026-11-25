@@ -6,7 +6,7 @@ import type { Deps } from '../context';
 import { Errors } from '../lib/errors';
 import { auditDb } from './audit';
 
-async function deny(deps: Deps, req: Request, resource: string, reason: string): Promise<never> {
+export async function deny(deps: Deps, req: Request, resource: string, reason: string): Promise<never> {
   const a = req.actor;
   await writeAudit(auditDb(deps, req), {
     tenantId: a?.tenantId?.toHexString(),

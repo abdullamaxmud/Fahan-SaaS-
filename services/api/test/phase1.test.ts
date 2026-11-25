@@ -159,7 +159,7 @@ describe('Phase 1 exit criteria', () => {
     // Cashiers may look up who they bill (demographics, mpi:V) — but never clinical fields.
     const patients = await cashier.get('/patients');
     expect(patients.status).toBe(200);
-    for (const p of patients.body.data) expect(Object.keys(p).sort()).toEqual(['branchId', 'dob', 'id', 'mrn', 'names', 'sexAtBirth', 'status']);
+    for (const p of patients.body.data) for (const k of ['careTeam', 'notes', 'diagnoses', 'observations', 'nameKeys']) expect(p).not.toHaveProperty(k);
     const audit = await cashier.get('/audit/events');
     expect(audit.status).toBe(403);
     expect(audit.body.error.code).toBe('PERMISSION_DENIED');

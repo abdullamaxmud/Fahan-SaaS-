@@ -10,6 +10,8 @@ export class AppError extends Error {
     public readonly code: string,
     message: string,
     public readonly details: ErrorDetail[] = [],
+    /** Extra structured data for the client, e.g. duplicate candidates. Never internal state. */
+    public readonly extra?: Record<string, unknown>,
   ) {
     super(message);
   }

@@ -23,6 +23,6 @@ export function errorHandler(log: Logger): ErrorRequestHandler {
       log.error({ err, correlationId: req.correlationId }, 'unhandled error');
       e = new AppError(500, 'INTERNAL', 'Something went wrong on our side. Quote the correlation id if you contact support.');
     }
-    res.status(e.status).json({ error: { code: e.code, message: e.message, correlationId: req.correlationId, details: e.details } });
+    res.status(e.status).json({ error: { code: e.code, message: e.message, correlationId: req.correlationId, details: e.details, ...e.extra } });
   };
 }
