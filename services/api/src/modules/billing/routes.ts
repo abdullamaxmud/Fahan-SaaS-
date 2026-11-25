@@ -112,7 +112,8 @@ export function billingRoutes(deps: Deps): Router {
     if (q.status) f.status = q.status;
     if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
     const list = await db(req).collection('charges').find(f).sort({ capturedAt: -1 }).limit(500).toArray();
-    res.json({ data: list.map((c) => ({ id: id(c), patientId: c.patientId.toHexString(), serviceCode: c.serviceCode, description: c.description, category: c.category, quantity: c.quantity, unitPriceMinor: c.unitPriceMinor, currency: c.currency, status: c.status, sourceType: c.sourceType })) });
+    const pats = await db(req).collection('patients').find({ _id: { $in: list.map((c) => c.patientId) } }, { projection: { names: 1, mrn: 1 } }).toArray();
+    res.json({ data: list.map((c) => ({ id: id(c), patientId: c.patientId.toHexString(), patient: pats.find((p) => p._id.equals(c.patientId)) ?? null, serviceCode: c.serviceCode, description: c.description, category: c.category, quantity: c.quantity, unitPriceMinor: c.unitPriceMinor, currency: c.currency, status: c.status, sourceType: c.sourceType })) });
   });
 
   r.post('/charges', need(deps, 'bill', 'E'), async (req, res) => {

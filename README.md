@@ -2,13 +2,14 @@
 
 Multi-tenant SaaS hospital operating platform. Built from the *Advanced Hospital Management System Developer Documentation* (v1.0).
 
-**Status: Phase 4 — Diagnostics & medicines.**
+**Status: Phase 5 — Revenue & operations.**
 
 - Phase 1 (done): identity, MFA, 55 roles, one database per hospital, organisation setup, tamper-evident audit trail.
 - Phase 2 (done): patient index with duplicate detection and reversible merges, consent, clinic schedules and appointments without double-booking, check-in queue, outpatient visits with vitals, signed and amended notes, ICD-11 diagnoses, patient timeline.
 - Phase 3 (done): allergies, break-glass with review, emergency department, wards and beds, admissions and discharge, nursing care plans and handovers, ICU device readings, theatres with the WHO safety checklist, maternity with linked newborn records, ambulance and referrals.
 - Phase 4 (done): inventory by batch and expiry, laboratory with verification, QC and critical values, radiology and diagnostics with signed reports, equipment and calibration, pharmacy with allergy checks and idempotent dispensing, medication chart, blood bank with compatibility and traceability.
-- Next: Phase 5 — billing, insurance, accounting, procurement, HR and payroll.
+- Phase 5 (done): double-entry ledger with period close, charges captured from clinical events, invoices, tills and idempotent payments, four-eyes refunds, signed mobile-money callbacks, insurance claims with denials and remittance, procurement with 3-way match, HR, rosters, leave and payroll.
+- Next: Phase 6 — reporting, BI and the AI assistants.
 
 ## Layout
 
@@ -40,6 +41,8 @@ Terminal 2, either load demo data (owner, hospital `hiil`, one user per key role
 npm run seed:demo
 ```
 
+To start the demo again from scratch, `npm run reset:dev-db` drops the Fahan databases on the local dev replica set (it refuses any port other than 27018), then run `npm run seed:demo` again.
+
 or create only the platform owner (once only):
 
 ```powershell
@@ -68,7 +71,7 @@ Sign in with **no hospital code** as the owner, create a hospital, then use its 
 npm test
 ```
 
-The API suite checks the Phase 1 exit criteria directly through HTTP: MFA enforcement, cashier denial, cross-hospital isolation, the grant ceiling, immediate revocation and the audit hash chain.
+The API suite checks the Phase 1 exit criteria directly through HTTP: MFA enforcement, cashier denial, cross-hospital isolation, the grant ceiling, immediate revocation and the audit hash chain. Phase 5 adds the finance acceptance checks: a refund above the threshold is refused without the finance director and kept in the audit trail, replayed payments and provider callbacks post once, every scenario leaves the trial balance balanced, and duplicate supplier invoices are refused.
 
 ## Configuration
 

@@ -73,6 +73,14 @@ export function accountingRoutes(deps: Deps): Router {
     res.status(201).json({ data: { id: ins.insertedId.toHexString(), status: 'Draft' } });
   });
 
+  r.get('/journals/drafts', need(deps, 'acct', 'V'), async (req, res) => {
+    const list = await db(req).collection('journal_drafts').find({ tenantId: req.actor!.tenantId, status: 'Draft' }).sort({ createdAt: 1 }).limit(200).toArray();
+    const users = await db(req).collection('users').find({ _id: { $in: list.map((d) => d.createdBy) } }, { projection: { name: 1 } }).toArray();
+    res.json({
+      data: list.map((d) => ({ id: id(d), postingDate: d.postingDate, currency: d.currency, memo: d.memo, lines: d.lines, totalMinor: (d.lines as { debitMinor: number }[]).reduce((n, l) => n + l.debitMinor, 0), mine: d.createdBy.equals(req.actor!.userId), createdByName: users.find((u) => u._id.equals(d.createdBy))?.name ?? null })),
+    });
+  });
+
   r.post('/journals/:id/approve', need(deps, 'acct', 'S'), async (req, res) => {
     const d = await db(req).collection('journal_drafts').findOne({ _id: idParam(req.params.id, 'Journal'), tenantId: req.actor!.tenantId });
     if (!d) throw Errors.notFound('Journal');

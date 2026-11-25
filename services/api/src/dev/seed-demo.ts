@@ -12,6 +12,7 @@ import { loadConfig } from '../config';
 import { Data, tenantDbName } from '../db/mongo';
 import { encrypt, newToken } from '../lib/crypto';
 import { hashPassword, totp } from '../lib/secrets';
+import { ensureChart } from '../modules/accounting/ledger';
 import { bootstrapOwner } from '../modules/platform/bootstrap';
 
 const config = loadConfig();
@@ -76,6 +77,13 @@ const people: [string, string, string, boolean][] = [
   ['storekeeper', 'Cali Bulxan', 'storekeeper', true],
   ['bloodbank', 'Shukri Dhimbil', 'bloodbank', true],
   ['biomedical', 'Eng. Jaamac Dirir', 'biomedical', false],
+  ['billing', 'Nimco Faarax', 'billing-officer', true],
+  ['claims', 'Sagal Jaamac', 'claims', false],
+  ['accountant', 'Maxamed Cabdi', 'accountant', false],
+  ['fd', 'Faadumo Aadan', 'finance-director', false],
+  ['approver', 'Yuusuf Warsame', 'finance-approver', false],
+  ['buyer', 'Khadar Ciise', 'procurement', false],
+  ['hr', 'Ruqiya Maxamed', 'hr', false],
 ];
 const ids: Record<string, unknown> = {};
 for (const [key, name, role, branchBound] of people) {
@@ -179,6 +187,43 @@ for (const [i, [g, m, f, dob, sex]] of pts.entries()) {
   });
 }
 await db.collection('counters').insertOne({ _id: `mrn:MGD:${yy}` as never, seq: pts.length });
+
+// ---- Phase 5: finance, insurance, procurement, HR ----
+await ensureChart(db, tid);
+const priceList: [string, string, string, number][] = [
+  ['CONS-OPD', 'Outpatient consultation', 'consultation', 1_000],
+  ['LAB-K', 'Potassium', 'laboratory', 800],
+  ['LAB-CBC', 'Full blood count', 'laboratory', 1_200],
+  ['LAB-MRDT', 'Malaria rapid test', 'laboratory', 500],
+  ['RAD-XR', 'X-ray', 'imaging', 2_500],
+  ['RAD-US', 'Ultrasound', 'imaging', 3_000],
+  ['RAD-CT', 'CT scan', 'imaging', 12_000],
+  ['DX-ECG', 'Electrocardiogram', 'imaging', 1_500],
+  ['RX-PCM500', 'Paracetamol 500 mg', 'pharmacy', 5],
+  ['RX-AMOX500', 'Amoxicillin 500 mg', 'pharmacy', 15],
+  ['RX-AL80', 'Artemether-lumefantrine', 'pharmacy', 40],
+  ['RX-AMLO5', 'Amlodipine 5 mg', 'pharmacy', 10],
+];
+await db.collection('service_prices').insertMany(priceList.map(([code, name, category, priceMinor]) => ({ tenantId: tid, code, name, category, priceMinor, currency: 'USD', version: 1, active: true, effectiveFrom: now, createdBy: ids.fd })));
+const [p1, p2] = await db.collection('patients').find({ tenantId: tid }).sort({ mrn: 1 }).limit(2).toArray();
+for (const [code, qty, src] of [['CONS-OPD', 1, 'seed-visit-1'], ['LAB-CBC', 1, 'seed-lab-1'], ['RX-AMOX500', 21, 'seed-rx-1']] as const) {
+  const pr = priceList.find((x) => x[0] === code)!;
+  await db.collection('charges').insertOne({ tenantId: tid, branchId: bid, patientId: p1!._id, serviceCode: code, description: pr[1], category: pr[2], quantity: qty, unitPriceMinor: pr[3], currency: 'USD', priceVersion: 1, status: 'unbilled', sourceType: 'seed', sourceId: src, active: true, capturedAt: now, capturedBy: ids.doctor });
+}
+const payer = await db.collection('payers').insertOne({ tenantId: tid, code: 'TAKAFUL', name: 'Takaful Somalia', kind: 'insurer', currency: 'USD', paymentTermsDays: 30, active: true, createdAt: now });
+await db.collection('payers').insertOne({ tenantId: tid, code: 'UNICEF', name: 'UNICEF child health programme', kind: 'ngo', currency: 'USD', paymentTermsDays: 45, active: true, createdAt: now });
+await db.collection('policies').insertOne({ tenantId: tid, patientId: p2!._id, payerId: payer.insertedId, payerName: 'Takaful Somalia', memberNumber: 'TK-55120', coveragePercent: 80, validFrom: `${now.getUTCFullYear()}-01-01`, validTo: `${now.getUTCFullYear()}-12-31`, createdAt: now });
+await db.collection('suppliers').insertOne({ tenantId: tid, code: 'MEDSUP', name: 'Medsup Trading', currency: 'USD', phone: '+252 61 000 0000', active: true, createdAt: now });
+for (const [code, name, unit] of [['GLOVE-M', 'Exam gloves (M)', 'box'], ['SYR-5', 'Syringe 5 ml', 'each']] as const) {
+  await db.collection('items').insertOne({ tenantId: tid, code, name, unit, kind: 'consumable', reorderLevel: 20, createdAt: now });
+}
+const soon = new Date(now.getTime() + 20 * 86_400_000).toISOString().slice(0, 10);
+for (const [i, [key, title, base]] of ([['doctor', 'Physician', 180_000], ['nurse', 'Staff nurse', 60_000], ['cashier', 'Cashier', 40_000], ['hr', 'HR officer', 55_000]] as const).entries()) {
+  const person = people.find((x) => x[0] === key)!;
+  const e = await db.collection('employees').insertOne({ tenantId: tid, staffNumber: `S-${String(i + 1).padStart(4, '0')}`, name: person[1], jobTitle: title, branchId: bid, userId: ids[key], hireDate: '2024-01-15', salary: { currency: 'USD', baseMinor: base, allowancesMinor: 10_000, deductionsMinor: Math.round(base * 0.05) }, status: 'active', createdAt: now });
+  if (key === 'nurse') await db.collection('credentials').insertOne({ tenantId: tid, employeeId: e.insertedId, employeeName: person[1], kind: 'nursing-licence', number: 'SNMC-2231', issuer: 'Somali Nursing & Midwifery Council', expiresOn: soon, createdAt: now });
+  if (key === 'doctor') await db.collection('credentials').insertOne({ tenantId: tid, employeeId: e.insertedId, employeeName: person[1], kind: 'medical-licence', number: 'SMC-0091', issuer: 'Somali Medical Council', expiresOn: `${now.getUTCFullYear() + 2}-03-31`, createdAt: now });
+}
 
 const dir = resolve(process.cwd(), '.data');
 mkdirSync(dir, { recursive: true });

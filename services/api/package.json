@@ -8,6 +8,7 @@
     "dev:db": "tsx src/dev/memory-db.ts",
     "bootstrap:owner": "tsx --env-file-if-exists=.env src/cli/bootstrap-owner.ts",
     "seed:demo": "tsx --env-file-if-exists=.env src/dev/seed-demo.ts",
+    "reset:dev-db": "tsx --env-file-if-exists=.env src/dev/reset-dev-db.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json"
   },

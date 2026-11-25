@@ -13,6 +13,7 @@
     "dev:web": "npm -w @fahan/web run dev",
     "bootstrap:owner": "npm -w @fahan/api run bootstrap:owner --",
     "seed:demo": "npm -w @fahan/api run seed:demo",
+    "reset:dev-db": "npm -w @fahan/api run reset:dev-db",
     "test": "npm -w @fahan/policy run test && npm -w @fahan/terminology run test && npm -w @fahan/api run test",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

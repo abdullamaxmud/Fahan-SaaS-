@@ -35,6 +35,11 @@ const ROUTES: Record<string, string> = {
   inv: '/inventory',
   bb: '/bloodbank',
   eq: '/equipment',
+  bill: '/billing',
+  ins: '/insurance',
+  acct: '/finance',
+  proc: '/procurement',
+  hr: '/hr',
 };
 
 function Icon({ name }: { name: string }) {
