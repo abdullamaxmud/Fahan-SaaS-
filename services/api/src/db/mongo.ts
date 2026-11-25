@@ -111,6 +111,12 @@ export class Data {
       db.collection('assets').createIndex({ tenantId: 1, branchId: 1, code: 1 }, { unique: true }),
       db.collection('assets').createIndex({ tenantId: 1, branchId: 1, modality: 1 }),
       db.collection('maintenance_jobs').createIndex({ tenantId: 1, assetId: 1, scheduledFor: -1 }),
+      ...['imaging_orders', 'diagnostic_orders'].flatMap((c) => [
+        db.collection(c).createIndex({ tenantId: 1, accessionNumber: 1 }, { unique: true }),
+        db.collection(c).createIndex({ tenantId: 1, studyInstanceUid: 1 }, { unique: true, partialFilterExpression: { studyInstanceUid: { $exists: true } } }),
+        db.collection(c).createIndex({ tenantId: 1, encounterId: 1, orderedAt: -1 }),
+        db.collection(c).createIndex({ tenantId: 1, assetId: 1, status: 1, scheduledFor: 1 }),
+      ]),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
