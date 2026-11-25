@@ -6,11 +6,13 @@ import type { Deps } from '../../context';
 import { AppError, Errors } from '../../lib/errors';
 import { localDate } from '../../lib/time';
 import { idParam, objectId, parse } from '../../lib/validate';
+import { encrypt, newToken } from '../../lib/crypto';
 import { audit } from '../../middleware/audit';
 import { assertBranch, deny, need } from '../../middleware/authorize';
 import { assertRecentMfa } from '../../middleware/session';
 import { CASH_ACCOUNT, CURRENCIES, postEntry, reverseEntry, type Currency } from '../accounting/ledger';
 import { loadPatient } from '../patients/access';
+import { PROVIDERS } from './webhook';
 import { CATEGORY_ACCOUNT, DISCOUNT_APPROVAL_PERCENT, REFUND_APPROVAL_THRESHOLD_MINOR, applyPayment, captureCharge } from './service';
 
 const minor = z.number().int().min(0).max(1e12);
@@ -415,6 +417,34 @@ export function billingRoutes(deps: Deps): Router {
     if (!upd.modifiedCount) throw Errors.conflict('INVALID_TRANSITION', 'Only requested refunds can be rejected');
     await audit(deps, req, { action: 'bill.refund.reject', resource: `refund:${id(x)}`, outcome: 'success', meta: { reason } });
     res.json({ data: { id: id(x), status: 'Rejected' } });
+  });
+
+  // ---- payment providers (spec §12.1): the signing secret is shown once and stored encrypted ----
+  r.post('/providers', need(deps, 'bill', 'A'), async (req, res) => {
+    const { provider } = parse(z.object({ provider: z.enum(PROVIDERS) }), req.body);
+    assertRecentMfa(deps, req);
+    const a = req.actor!;
+    const secret = newToken(32);
+    await db(req).collection('payment_providers').updateOne(
+      { tenantId: a.tenantId, provider },
+      { $set: { secretEnc: encrypt(secret, deps.config.dataKey), active: true, rotatedAt: new Date(), rotatedBy: a.userId }, $setOnInsert: { createdAt: new Date() } },
+      { upsert: true },
+    );
+    await audit(deps, req, { action: 'bill.provider.secret_rotate', resource: `payment_provider:${provider}`, outcome: 'success' });
+    res.status(201).json({ data: { provider, secret, webhookPath: `/api/v1/webhooks/payments/${a.tenantSlug ?? ''}/${provider}` } });
+  });
+
+  r.get('/providers', need(deps, 'bill', 'S'), async (req, res) => {
+    const list = await db(req).collection('payment_providers').find({ tenantId: req.actor!.tenantId }, { projection: { secretEnc: 0 } }).toArray();
+    res.json({ data: list.map((p) => ({ provider: p.provider, active: p.active, rotatedAt: p.rotatedAt })) });
+  });
+
+  r.get('/payment-events', need(deps, 'bill', 'S'), async (req, res) => {
+    const q = parse(z.object({ status: z.enum(['applied', 'unmatched', 'ignored']).optional() }), req.query);
+    const f: Document = { tenantId: req.actor!.tenantId };
+    if (q.status) f.status = q.status;
+    const list = await db(req).collection('payment_events').find(f).sort({ receivedAt: -1 }).limit(300).toArray();
+    res.json({ data: list.map((e) => ({ id: id(e), provider: e.provider, transactionId: e.transactionId, invoiceNumber: e.invoiceNumber, amountMinor: e.amountMinor, currency: e.currency, status: e.status, reason: e.reason ?? null, receiptNo: e.receiptNo ?? null, receivedAt: e.receivedAt })) });
   });
 
   return r;

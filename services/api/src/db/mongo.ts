@@ -144,6 +144,10 @@ export class Data {
       db.collection('payments').createIndex({ sessionId: 1 }),
       db.collection('cashier_sessions').createIndex({ tenantId: 1, cashierId: 1 }, { unique: true, partialFilterExpression: { status: 'open' }, name: 'one_open_till' }),
       db.collection('refunds').createIndex({ tenantId: 1, status: 1, requestedAt: 1 }),
+      db.collection('payment_providers').createIndex({ tenantId: 1, provider: 1 }, { unique: true }),
+      // A provider transaction is applied once, however often the provider retries.
+      db.collection('payment_events').createIndex({ tenantId: 1, provider: 1, transactionId: 1 }, { unique: true, name: 'one_event_per_transaction' }),
+      db.collection('payment_events').createIndex({ tenantId: 1, status: 1, receivedAt: -1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),

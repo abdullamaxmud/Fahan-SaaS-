@@ -9,6 +9,7 @@ import { csrfGuard, loadSession, requireAuth, requirePlatform, requireTenant } f
 import { accountingRoutes } from './modules/accounting/routes';
 import { admissionRoutes } from './modules/admissions/routes';
 import { billingRoutes } from './modules/billing/routes';
+import { paymentWebhookRoutes } from './modules/billing/webhook';
 import { appointmentRoutes } from './modules/appointments/routes';
 import { auditRoutes } from './modules/audit/routes';
 import { bloodBankRoutes } from './modules/bloodbank/routes';
@@ -45,6 +46,8 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
       }),
     );
   }
+  // Provider callbacks carry their own signature over the raw body, so they are mounted before JSON parsing and outside the session.
+  app.use('/api/v1/webhooks/payments', paymentWebhookRoutes(deps));
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
