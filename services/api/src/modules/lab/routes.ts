@@ -10,6 +10,7 @@ import { audit } from '../../middleware/audit';
 import { assertBranch, deny, need } from '../../middleware/authorize';
 import { encLevelOk, loadPatient } from '../patients/access';
 import { PRIORITIES, nextNumber, orderingContext } from '../orders/common';
+import { chargeEvent } from '../billing/service';
 
 const Analyte = z.object({
   code: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{1,16}$/),
@@ -229,6 +230,7 @@ export function labRoutes(deps: Deps): Router {
     const upd = await db(req).collection('lab_orders').updateOne({ _id: o._id, status: 'Verified' }, { $set: { status: 'Released', releasedAt: now(), releasedBy: req.actor!.userId }, $inc: { version: 1 } });
     if (!upd.modifiedCount) throw Errors.conflict('NOT_VERIFIED', 'Results cannot be released before verification');
     await audit(deps, req, { action: 'lab.release', resource: `lab_order:${id(o)}`, outcome: 'success' });
+    await chargeEvent(req, { branchId: o.branchId, patientId: o.patientId, encounterId: o.encounterId, serviceCode: `LAB-${o.testCode}`, sourceType: 'lab_order', sourceId: o._id, description: o.testName });
     res.json({ data: { id: id(o), status: 'Released' } });
   });
 

@@ -12,6 +12,7 @@ import { assertRecentMfa } from '../../middleware/session';
 import { recordMovements, takeStock } from '../inventory/stock';
 import { encLevelOk, loadPatient } from '../patients/access';
 import { orderingContext } from '../orders/common';
+import { chargeEvent } from '../billing/service';
 
 const FREQ = ['once', 'stat', 'daily', 'bid', 'tid', 'qid', 'q4h', 'q6h', 'q8h', 'q12h', 'weekly', 'prn'] as const;
 const NewRx = z.object({
@@ -203,6 +204,8 @@ export function pharmacyRoutes(deps: Deps): Router {
       await s.endSession();
     }
     await audit(deps, req, { action: 'rx.dispense', resource: `prescription:${id(x)}`, outcome: 'success', meta: { batches: lots.map((l) => l.batch).join(',') } });
+    const item = await db(req).collection('items').findOne({ _id: x.itemId }, { projection: { code: 1 } });
+    if (item) await chargeEvent(req, { branchId: x.branchId, patientId: x.patientId, encounterId: x.encounterId, serviceCode: `RX-${item.code}`, quantity: x.quantity, sourceType: 'prescription', sourceId: x._id, description: x.drug?.name ?? String(item.code) });
     res.json({ data: { id: id(x), status: 'Dispensed', lots: lots.map((l) => ({ batch: l.batch, expiry: l.expiry, quantity: l.quantity })) } });
   });
 

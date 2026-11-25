@@ -101,6 +101,12 @@ describe('processing and verification', () => {
     const after = (await H.staff.doctor!.c.get(`/lab/orders?encounterId=${enc}`)).body.data.find((o: { testCode: string }) => o.testCode === 'K');
     expect(after.results[0]).toMatchObject({ value: 6.8, flag: 'HH', unit: 'mmol/L' });
   });
+
+  it('a released result is charged once; with no price yet it is held for billing', async () => {
+    const charges = (await H.staff.cashier!.c.get('/billing/charges')).body.data;
+    expect(charges).toHaveLength(1);
+    expect(charges[0]).toMatchObject({ serviceCode: 'LAB-K', status: 'unpriced', sourceType: 'lab_order' });
+  });
 });
 
 describe('critical values', () => {

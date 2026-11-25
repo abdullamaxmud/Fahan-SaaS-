@@ -1,4 +1,5 @@
 import type { ClientSession, Db, Document, ObjectId } from 'mongodb';
+import type { Request } from 'express';
 import { AppError } from '../../lib/errors';
 import { CASH_ACCOUNT, postEntry, type Currency } from '../accounting/ledger';
 
@@ -106,4 +107,32 @@ export async function applyPayment(
     by: p.by,
   });
   return { _id: ins.insertedId, ...doc, invoiceStatus: balance === 0 ? 'Paid' : 'PartiallyPaid', balanceMinor: balance };
+}
+
+/**
+ * Charge capture from a clinical event (lab release, report signed, dispense, visit closed). Best effort: a billing
+ * problem is logged and left for the billing officer, it never blocks or undoes clinical work. Missing prices are
+ * held as "unpriced" charges, and replays of the same event create nothing (unique source + service).
+ */
+export async function chargeEvent(
+  req: Request,
+  ev: { branchId: ObjectId; patientId: ObjectId; encounterId?: ObjectId; serviceCode: string; quantity?: number; sourceType: string; sourceId: ObjectId | string; description?: string },
+): Promise<void> {
+  const a = req.actor!;
+  try {
+    await captureCharge(a.db!, {
+      tenantId: a.tenantId!,
+      branchId: ev.branchId,
+      patientId: ev.patientId,
+      encounterId: ev.encounterId,
+      serviceCode: ev.serviceCode.toUpperCase(),
+      quantity: ev.quantity ?? 1,
+      sourceType: ev.sourceType,
+      sourceId: typeof ev.sourceId === 'string' ? ev.sourceId : ev.sourceId.toHexString(),
+      description: ev.description,
+      by: a.userId,
+    });
+  } catch (e) {
+    req.log?.error({ err: e, service: ev.serviceCode, source: ev.sourceType }, 'charge capture failed');
+  }
 }

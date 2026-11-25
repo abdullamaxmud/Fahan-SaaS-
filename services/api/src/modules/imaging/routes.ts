@@ -13,6 +13,7 @@ import { assertRecentMfa } from '../../middleware/session';
 import { assetUsable } from '../equipment/routes';
 import { encLevelOk, loadPatient } from '../patients/access';
 import { PRIORITIES, nextNumber, orderingContext } from '../orders/common';
+import { chargeEvent } from '../billing/service';
 
 const IONISING = ['XR', 'CT', 'FL', 'MG'];
 
@@ -223,6 +224,7 @@ export function imagingRoutes(deps: Deps, k: Kind): Router {
     if (body.criticalFinding) set.critical = { finding: body.criticalFinding, raisedAt: now(), acknowledgedAt: null, acknowledgedByName: null };
     await col(req).updateOne({ _id: o._id, status: 'Interpreted' }, { $set: set, $inc: { version: 1 } });
     await audit(deps, req, { action: body.criticalFinding ? `${k.module}.critical.raise` : `${k.module}.sign`, resource: `${k.collection}:${id(o)}`, outcome: 'success' });
+    await chargeEvent(req, { branchId: o.branchId, patientId: o.patientId, encounterId: o.encounterId, serviceCode: `${k.prefix}-${o.modality}`, sourceType: k.collection, sourceId: o._id, description: o.examination });
     res.json({ data: { id: id(o), status: 'Final', critical: Boolean(body.criticalFinding) } });
   });
 

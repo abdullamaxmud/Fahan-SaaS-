@@ -13,6 +13,7 @@ import { assertRecentMfa } from '../../middleware/session';
 import { ENC_TYPES, encLevelOk, encModules, linkedPatientIds, loadPatient } from '../patients/access';
 import { nextQueueNo, openEncounter } from './service';
 import { publicAllergy } from '../clinical/routes';
+import { chargeEvent } from '../billing/service';
 
 const Walkin = z.object({ patientId: objectId, reason: z.string().trim().max(300).optional() });
 const ListQuery = z.object({ status: z.enum(['active', 'closed', 'all']).default('active') });
@@ -401,6 +402,7 @@ export function encounterRoutes(deps: Deps): Router {
     await db(req).collection('encounters').updateOne({ _id: e._id }, { $set: { status: 'Closed', endedAt: now, closedBy: req.actor!.userId }, $inc: { version: 1 } });
     if (e.appointmentId) await db(req).collection('appointments').updateOne({ _id: e.appointmentId }, { $set: { status: 'Completed', completedAt: now }, $unset: { slotLock: '' } });
     await audit(deps, req, { action: 'opd.encounter.close', resource: `encounter:${id(e)}`, outcome: 'success', meta: { primary: primary!.code } });
+    await chargeEvent(req, { branchId: e.branchId, patientId: e.patientId, encounterId: e._id, serviceCode: 'CONS-OPD', sourceType: 'encounter', sourceId: e._id, description: 'Outpatient consultation' });
     res.json({ data: { id: id(e), status: 'Closed' } });
   });
 
