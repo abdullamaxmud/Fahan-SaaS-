@@ -14,6 +14,7 @@ import { clinicalRoutes } from './modules/clinical/routes';
 import { emergencyRoutes } from './modules/emergency/routes';
 import { encounterRoutes, timelineRoutes } from './modules/encounters/routes';
 import { iamRoutes } from './modules/iam/routes';
+import { maternityRoutes } from './modules/maternity/routes';
 import { nursingRoutes } from './modules/nursing/routes';
 import { orgRoutes } from './modules/org/routes';
 import { patientRoutes } from './modules/patients/routes';
@@ -61,6 +62,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/emergency', emergencyRoutes(deps));
   tenant.use('/nursing', nursingRoutes(deps));
   tenant.use('/surgery', surgeryRoutes(deps));
+  tenant.use('/maternity', maternityRoutes(deps));
   tenant.use('/appointments', appointmentRoutes(deps));
   tenant.use('/audit', auditRoutes(deps));
   api.use(tenant);
