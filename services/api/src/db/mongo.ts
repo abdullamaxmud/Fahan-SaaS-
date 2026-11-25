@@ -77,6 +77,15 @@ export class Data {
       db.collection('diagnoses').createIndex({ tenantId: 1, code: 1, certainty: 1, recordedAt: 1 }),
       db.collection('diagnoses').createIndex({ tenantId: 1, encounterId: 1 }),
       db.collection('diagnoses').createIndex({ tenantId: 1, patientId: 1, recordedAt: -1 }),
+      db.collection('wards').createIndex({ tenantId: 1, branchId: 1, code: 1 }, { unique: true }),
+      db.collection('beds').createIndex({ tenantId: 1, branchId: 1, code: 1 }, { unique: true }),
+      db.collection('beds').createIndex({ tenantId: 1, wardId: 1, status: 1 }),
+      // Spec §5.8: one active occupant per bed; one active bed per admission.
+      db.collection('bed_assignments').createIndex({ tenantId: 1, bedId: 1 }, { unique: true, partialFilterExpression: { active: true }, name: 'one_active_per_bed' }),
+      db.collection('bed_assignments').createIndex({ tenantId: 1, admissionId: 1 }, { unique: true, partialFilterExpression: { active: true }, name: 'one_active_bed_per_admission' }),
+      // Spec §5.7: no simultaneous active admissions for one patient.
+      db.collection('admissions').createIndex({ tenantId: 1, patientId: 1 }, { unique: true, partialFilterExpression: { activeLock: true }, name: 'one_active_admission' }),
+      db.collection('admissions').createIndex({ tenantId: 1, branchId: 1, status: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
       db.collection('break_glass').createIndex({ tenantId: 1, userId: 1, patientId: 1, expiresAt: -1 }),
       db.collection('break_glass').createIndex({ tenantId: 1, review: 1, createdAt: -1 }),

@@ -6,7 +6,7 @@ export type EncounterStatus = 'Open' | 'InProgress' | 'Signed' | 'Closed';
 /** Opens an OPD encounter (spec §5.5). Used by walk-ins and by appointment check-in. */
 export async function openEncounter(
   req: Request,
-  e: { patientId: ObjectId; branchId: ObjectId; clinicianIds: ObjectId[]; appointmentId?: ObjectId; queueNo?: number; reason?: string },
+  e: { patientId: ObjectId; branchId: ObjectId; clinicianIds: ObjectId[]; appointmentId?: ObjectId; queueNo?: number; reason?: string; type?: 'OPD' | 'ER' | 'IP'; extra?: Record<string, unknown> },
   session?: ClientSession,
 ): Promise<ObjectId> {
   const a = req.actor!;
@@ -14,7 +14,7 @@ export async function openEncounter(
   const ins = await a.db!.collection('encounters').insertOne(
     {
       tenantId: a.tenantId,
-      type: 'OPD',
+      type: e.type ?? 'OPD',
       status: 'Open' as EncounterStatus,
       patientId: e.patientId,
       branchId: e.branchId,
@@ -26,6 +26,7 @@ export async function openEncounter(
       createdAt: now,
       createdBy: a.userId,
       version: 1,
+      ...e.extra,
     },
     { session },
   );
