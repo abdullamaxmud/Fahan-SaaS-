@@ -127,6 +127,12 @@ export class Data {
       db.collection('blood_units').createIndex({ tenantId: 1, branchId: 1, status: 1, group: 1, component: 1, expiry: 1 }),
       db.collection('blood_typings').createIndex({ tenantId: 1, patientId: 1, at: -1 }),
       db.collection('transfusion_requests').createIndex({ tenantId: 1, branchId: 1, status: 1, requestedAt: 1 }),
+      db.collection('accounts').createIndex({ tenantId: 1, code: 1 }, { unique: true }),
+      db.collection('periods').createIndex({ tenantId: 1, key: 1 }, { unique: true }),
+      // Each source transaction posts once (idempotent ledger postings).
+      db.collection('journal_entries').createIndex({ tenantId: 1, 'source.type': 1, 'source.id': 1, 'source.kind': 1 }, { unique: true, name: 'one_posting_per_source' }),
+      db.collection('journal_entries').createIndex({ tenantId: 1, currency: 1, periodKey: 1 }),
+      db.collection('journal_entries').createIndex({ tenantId: 1, entryNo: 1 }, { unique: true }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
