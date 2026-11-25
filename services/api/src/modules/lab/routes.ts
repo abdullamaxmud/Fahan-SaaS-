@@ -127,7 +127,7 @@ export function labRoutes(deps: Deps): Router {
       version: 1,
     }));
     const ins = await db(req).collection('lab_orders').insertMany(docs);
-    await audit(deps, req, { action: 'lab.order', resource: `encounter:${id(e)}`, outcome: 'success', meta: { tests: tests.map((t) => t.code).join(','), priority: body.priority } });
+    await audit(deps, req, { action: 'lab.order', resource: `encounter:${e._id.toHexString()}`, outcome: 'success', meta: { tests: tests.map((t) => t.code).join(','), priority: body.priority } });
     res.status(201).json({ data: Object.values(ins.insertedIds).map((x) => x.toHexString()) });
   });
 

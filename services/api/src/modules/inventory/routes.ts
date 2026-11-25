@@ -136,11 +136,11 @@ export function inventoryRoutes(deps: Deps): Router {
       const existing = await db(req).collection('stock_lots').findOne({ storeId: s._id, itemId: body.itemId, batch: body.batch }, { session: ss });
       if (existing && existing.expiry !== body.expiry) throw new AppError(409, 'BATCH_EXPIRY_MISMATCH', `Batch ${body.batch} is already recorded with expiry ${existing.expiry}`);
       const up = await db(req).collection('stock_lots').findOneAndUpdate(
-        { tenantId: a.tenantId, storeId: s._id, itemId: body.itemId, batch: body.batch },
+        { tenantId: a.tenantId!, storeId: s._id, itemId: body.itemId, batch: body.batch },
         { $inc: { quantity: body.quantity, version: 1 }, $setOnInsert: { expiry: body.expiry, branchId: s.branchId, createdAt: new Date() } },
         { upsert: true, returnDocument: 'after', session: ss },
       );
-      await recordMovements(db(req), ss, { tenantId: a.tenantId, storeId: s._id, itemId: body.itemId, type: 'receive', by: a.userId, ref: body.supplierRef }, [{ lotId: up!._id, quantity: body.quantity }]);
+      await recordMovements(db(req), ss, { tenantId: a.tenantId!, storeId: s._id, itemId: body.itemId, type: 'receive', by: a.userId, ref: body.supplierRef }, [{ lotId: up!._id, quantity: body.quantity }]);
       return up!;
     });
     await audit(deps, req, { action: 'inv.receive', resource: `lot:${id(lot)}`, outcome: 'success', meta: { quantity: body.quantity } });
@@ -153,19 +153,19 @@ export function inventoryRoutes(deps: Deps): Router {
     const [from, to] = [await store(req, body.fromStoreId), await store(req, body.toStoreId)];
     const a = req.actor!;
     const taken = await txn(async (s) => {
-      const t = await takeStock(db(req), s, { tenantId: a.tenantId, storeId: from._id, itemId: body.itemId, quantity: body.quantity, lotId: body.lotId, today: today() });
+      const t = await takeStock(db(req), s, { tenantId: a.tenantId!, storeId: from._id, itemId: body.itemId, quantity: body.quantity, lotId: body.lotId, today: today() });
       const inLines: { lotId: ObjectId; quantity: number }[] = [];
       for (const x of t) {
         const dest = await db(req).collection('stock_lots').findOneAndUpdate(
-          { tenantId: a.tenantId, storeId: to._id, itemId: body.itemId, batch: x.batch },
+          { tenantId: a.tenantId!, storeId: to._id, itemId: body.itemId, batch: x.batch },
           { $inc: { quantity: x.quantity, version: 1 }, $setOnInsert: { expiry: x.expiry, branchId: to.branchId, createdAt: new Date() } },
           { upsert: true, returnDocument: 'after', session: s },
         );
         inLines.push({ lotId: dest!._id, quantity: x.quantity });
       }
       const ref = `transfer:${from.code}->${to.code}`;
-      await recordMovements(db(req), s, { tenantId: a.tenantId, storeId: from._id, itemId: body.itemId, type: 'transfer-out', by: a.userId, ref }, t.map((x) => ({ lotId: x.lotId, quantity: -x.quantity })));
-      await recordMovements(db(req), s, { tenantId: a.tenantId, storeId: to._id, itemId: body.itemId, type: 'transfer-in', by: a.userId, ref }, inLines);
+      await recordMovements(db(req), s, { tenantId: a.tenantId!, storeId: from._id, itemId: body.itemId, type: 'transfer-out', by: a.userId, ref }, t.map((x) => ({ lotId: x.lotId, quantity: -x.quantity })));
+      await recordMovements(db(req), s, { tenantId: a.tenantId!, storeId: to._id, itemId: body.itemId, type: 'transfer-in', by: a.userId, ref }, inLines);
       return t;
     });
     await audit(deps, req, { action: 'inv.transfer', resource: `item:${body.itemId.toHexString()}`, outcome: 'success', meta: { quantity: body.quantity, from: from.code, to: to.code } });
@@ -177,8 +177,8 @@ export function inventoryRoutes(deps: Deps): Router {
     const s = await store(req, body.storeId);
     const a = req.actor!;
     const taken = await txn(async (ss) => {
-      const t = await takeStock(db(req), ss, { tenantId: a.tenantId, storeId: s._id, itemId: body.itemId, quantity: body.quantity, lotId: body.lotId, today: today() });
-      await recordMovements(db(req), ss, { tenantId: a.tenantId, storeId: s._id, itemId: body.itemId, type: 'issue', by: a.userId, reason: body.reason }, t.map((x) => ({ lotId: x.lotId, quantity: -x.quantity })));
+      const t = await takeStock(db(req), ss, { tenantId: a.tenantId!, storeId: s._id, itemId: body.itemId, quantity: body.quantity, lotId: body.lotId, today: today() });
+      await recordMovements(db(req), ss, { tenantId: a.tenantId!, storeId: s._id, itemId: body.itemId, type: 'issue', by: a.userId, reason: body.reason }, t.map((x) => ({ lotId: x.lotId, quantity: -x.quantity })));
       return t;
     });
     await audit(deps, req, { action: 'inv.issue', resource: `item:${body.itemId.toHexString()}`, outcome: 'success', meta: { quantity: body.quantity } });
@@ -196,7 +196,7 @@ export function inventoryRoutes(deps: Deps): Router {
       if (body.delta < 0) filter.quantity = { $gte: -body.delta };
       const upd = await db(req).collection('stock_lots').updateOne(filter, { $inc: { quantity: body.delta, version: 1 } }, { session: s });
       if (!upd.modifiedCount) throw new AppError(409, 'INSUFFICIENT_STOCK', 'An adjustment cannot make stock negative');
-      await recordMovements(db(req), s, { tenantId: a.tenantId, storeId: lot.storeId, itemId: lot.itemId, type: 'adjust', by: a.userId, reason: body.reason }, [{ lotId: lot._id, quantity: body.delta }]);
+      await recordMovements(db(req), s, { tenantId: a.tenantId!, storeId: lot.storeId, itemId: lot.itemId, type: 'adjust', by: a.userId, reason: body.reason }, [{ lotId: lot._id, quantity: body.delta }]);
     });
     await audit(deps, req, { action: 'inv.adjust', resource: `lot:${id(lot)}`, outcome: 'success', meta: { delta: body.delta } });
     res.json({ data: { lotId: id(lot) } });
