@@ -20,6 +20,8 @@ export interface Config {
   cookieSecure: boolean;
   /** How recently MFA must have been confirmed for sensitive changes (spec §3.4 re-authentication). */
   reauthWindowMs: number;
+  /** Injectable clock for scheduling rules (tests pin it). */
+  now: () => Date;
 }
 
 /** Fixed key used only outside production so local dev and tests work without setup. */
@@ -43,5 +45,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     sessionTtlMs: e.SESSION_TTL_HOURS * 3_600_000,
     cookieSecure: e.COOKIE_SECURE ? e.COOKIE_SECURE === 'true' : e.NODE_ENV === 'production',
     reauthWindowMs: 10 * 60_000,
+    now: () => new Date(),
   };
 }

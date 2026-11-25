@@ -6,6 +6,7 @@ import { pinoHttp } from 'pino-http';
 import type { Deps } from './context';
 import { correlation, errorHandler, notFound } from './middleware/core';
 import { csrfGuard, loadSession, requireAuth, requirePlatform, requireTenant } from './middleware/session';
+import { appointmentRoutes } from './modules/appointments/routes';
 import { auditRoutes } from './modules/audit/routes';
 import { authRoutes } from './modules/auth/routes';
 import { iamRoutes } from './modules/iam/routes';
@@ -47,6 +48,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/', orgRoutes(deps));
   tenant.use('/', iamRoutes(deps));
   tenant.use('/patients', patientRoutes(deps));
+  tenant.use('/appointments', appointmentRoutes(deps));
   tenant.use('/audit', auditRoutes(deps));
   api.use(tenant);
 
