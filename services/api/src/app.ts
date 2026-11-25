@@ -9,6 +9,7 @@ import { csrfGuard, loadSession, requireAuth, requirePlatform, requireTenant } f
 import { admissionRoutes } from './modules/admissions/routes';
 import { appointmentRoutes } from './modules/appointments/routes';
 import { auditRoutes } from './modules/audit/routes';
+import { bloodBankRoutes } from './modules/bloodbank/routes';
 import { authRoutes } from './modules/auth/routes';
 import { clinicalRoutes } from './modules/clinical/routes';
 import { emergencyRoutes } from './modules/emergency/routes';
@@ -74,6 +75,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/lab', labRoutes(deps));
   tenant.use('/equipment', equipmentRoutes(deps));
   tenant.use('/pharmacy', pharmacyRoutes(deps));
+  tenant.use('/bloodbank', bloodBankRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));
