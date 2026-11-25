@@ -1,0 +1,21 @@
+{
+  "name": "hospitalos",
+  "private": true,
+  "description": "HospitalOS — multi-tenant SaaS hospital operating platform",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:db": "npm -w @hospitalos/api run dev:db",
+    "dev:api": "npm -w @hospitalos/api run dev",
+    "dev:web": "npm -w @hospitalos/web run dev",
+    "bootstrap:owner": "npm -w @hospitalos/api run bootstrap:owner --",
+    "test": "npm -w @hospitalos/policy run test && npm -w @hospitalos/api run test",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
