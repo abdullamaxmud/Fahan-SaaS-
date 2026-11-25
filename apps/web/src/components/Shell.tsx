@@ -20,6 +20,14 @@ const ROUTES: Record<string, string> = {
   mpi: '/patients',
   appt: '/appointments',
   opd: '/encounters',
+  er: '/emergency',
+  adm: '/wards',
+  bed: '/wards',
+  nur: '/wards',
+  icu: '/wards',
+  sx: '/surgery',
+  mat: '/maternity',
+  amb: '/referrals',
 };
 
 function Icon({ name }: { name: string }) {
@@ -84,7 +92,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <LayoutDashboard size={18} strokeWidth={1.75} />
             {t('My workspace', 'Goobta shaqadayda')}
           </Link>
-          {groups.map(({ g, items }) => (
+          {(() => {
+            // Several modules can open the same page (e.g. wards); highlight only the first of them.
+            const lit = new Set<string>();
+            return groups.map(({ g, items }) => (
             <div key={g} className="mt-3.5">
               <span className="eyebrow block px-2.5 pb-1.5">{MODULE_GROUPS[g][lang]}</span>
               {items.map((m) => {
@@ -92,7 +103,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 const platformOk = me.kind !== 'platform' || m.key === 'plat' || m.key === 'sec';
                 const href = (platformOk && ROUTES[m.key]) || `/m/${m.key}`;
                 return (
-                  <Link key={m.key} href={href} className={linkCls(path.startsWith(href))} onClick={() => setOpen(false)}>
+                  <Link
+                    key={m.key}
+                    href={href}
+                    className={linkCls(path.startsWith(href) && !lit.has(href) && Boolean(lit.add(href)))}
+                    onClick={() => setOpen(false)}
+                  >
                     <Icon name={m.icon} />
                     <span className="min-w-0 flex-1 truncate">{lang === 'so' ? m.so : m.name}</span>
                     <span className="rounded bg-surface-3 px-1 font-mono text-[10.5px] font-semibold text-ink-2" title="Your access level">
@@ -102,7 +118,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 );
               })}
             </div>
-          ))}
+            ));
+          })()}
         </nav>
         <div className="border-t border-line p-3">
           <button onClick={logout} className={`${linkCls(false)} w-full`}>

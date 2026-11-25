@@ -56,6 +56,18 @@ const people: [string, string, string, boolean][] = [
   ['doctor', 'Dr. Hodan Warsame', 'physician', true],
   ['nurse', 'Deeqa Ali', 'nurse', true],
   ['cashier', 'Hamdi Yuusuf', 'cashier', true],
+  ['officer', 'Bashiir Gedi', 'admission-officer', true],
+  ['wardmgr', 'Xaawo Elmi', 'ward-manager', true],
+  ['warddoc', 'Dr. Mahad Nuur', 'ward-physician', true],
+  ['ernurse', 'Ubah Kahin', 'er-nurse', true],
+  ['erdoc', 'Dr. Liibaan Dualeh', 'er-clinician', true],
+  ['surgeon', 'Dr. Abshir Samatar', 'surgeon', true],
+  ['anest', 'Dr. Leyla Osman', 'anesthetist', true],
+  ['tnurse', 'Zamzam Hirsi', 'theatre-nurse', true],
+  ['obs', 'Dr. Ladan Ismail', 'obstetrician', true],
+  ['midwife', 'Maryan Gure', 'midwife', true],
+  ['dispatch', 'Abdirisaaq Hurre', 'dispatch', true],
+  ['auditor', 'Axmed Gaas', 'security-auditor', false],
 ];
 const ids: Record<string, unknown> = {};
 for (const [key, name, role, branchBound] of people) {
@@ -80,6 +92,31 @@ for (const [key, name, role, branchBound] of people) {
 await db.collection('provider_schedules').insertMany(
   [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ tenantId: t.insertedId, providerId: ids.doctor, branchId: branch.insertedId, weekday, start: '08:00', end: '16:00', slotMinutes: 20, createdAt: now })),
 );
+// Facilities for Phase 3: two wards with beds, two theatres, two ambulances.
+for (const [code, name, kind, count] of [
+  ['3B', 'Ward 3B Medical', 'general', 8],
+  ['ICU', 'Intensive care', 'icu', 4],
+] as const) {
+  const w = await db.collection('wards').insertOne({ tenantId: t.insertedId, branchId: branch.insertedId, code, name, kind, status: 'Active', createdAt: now });
+  await db.collection('beds').insertMany(
+    Array.from({ length: count }, (_, i) => ({ tenantId: t.insertedId, wardId: w.insertedId, branchId: branch.insertedId, code: `${code}-${String(i + 1).padStart(2, '0')}`, status: 'Available', createdAt: now, version: 1 })),
+  );
+}
+await db.collection('theatres').insertMany(
+  ['OT-1', 'OT-2'].map((code) => ({ tenantId: t.insertedId, branchId: branch.insertedId, code, name: `Main theatre ${code.slice(-1)}`, status: 'Available', lockSeq: 0, createdAt: now })),
+);
+await db.collection('vehicles').insertMany(
+  [
+    ['AMB-04', 'advanced'],
+    ['AMB-07', 'basic'],
+  ].map(([code, kind]) => ({ tenantId: t.insertedId, branchId: branch.insertedId, code, kind, status: 'Available', createdAt: now })),
+);
+for (const key of ['obs', 'midwife']) {
+  await db.collection('provider_schedules').insertMany(
+    [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ tenantId: t.insertedId, providerId: ids[key], branchId: branch.insertedId, weekday, start: '08:00', end: '16:00', slotMinutes: 30, createdAt: now })),
+  );
+}
+
 const yy = now.getUTCFullYear().toString().slice(2);
 const pts: [string, string, string, string, string][] = [
   ['Faadumo', 'Cali', 'Xasan', '1992-03-14', 'female'],

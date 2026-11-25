@@ -49,6 +49,11 @@ export default function AuditPage() {
         {t('Every sign-in, change and refused request is written here. Each entry is chained to the one before it, so any edit or deletion is detected.', 'Dhacdo kasta halkan ayaa lagu qoraa.')}
       </PageHeader>
       <ErrorNote error={load.error} />
+      {!isPlatform ? (
+        <a className="btn self-start" href="/admin/break-glass">
+          {t('Review emergency access', 'Eeg gelitaanka degdegga')}
+        </a>
+      ) : null}
       {chain ? (
         <div className={`flex items-center gap-3 rounded-[12px] p-3.5 text-[13.5px] ${chain.ok ? 'bg-ok-soft text-ok' : 'bg-crit-soft text-crit'}`}>
           {chain.ok ? <ShieldCheck size={20} /> : <ShieldX size={20} />}

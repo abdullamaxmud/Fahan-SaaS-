@@ -46,7 +46,8 @@ interface Encounter {
   queueNo: number | null;
   reason: string | null;
   startedAt: string;
-  patient: PatientBrief;
+  patient: PatientBrief & { allergies: { id: string; substance: string; severity: string; reaction: string | null }[] };
+  type: string;
   team: { id: string; name: string; roles: string[] }[];
   observations: Obs[];
   notes: Note[];
@@ -79,9 +80,12 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
 
   if (!e) return <ErrorNote error={load.error} />;
   const closed = e.status === 'Closed';
-  const canObs = !closed && (canDo(me, 'nur', 'E') || canDo(me, 'opd', 'E'));
-  const canNote = !closed && canDo(me, 'opd', 'E');
-  const canSign = canDo(me, 'opd', 'S');
+  // The governing module depends on the visit type (mirrors the API's rule; the API decides).
+  const mods: ('opd' | 'tele' | 'er' | 'icu' | 'mat' | 'nur')[] = e.type === 'ER' ? ['er'] : e.type === 'IP' ? ['opd', 'icu', 'mat', 'nur'] : ['opd', 'tele'];
+  const lvl = (l: 'E' | 'S') => mods.some((m) => canDo(me, m, l));
+  const canObs = !closed && lvl('E');
+  const canNote = !closed && lvl('E');
+  const canSign = lvl('S');
   const fe = fieldErrors(act.error);
   const run = async (fn: () => Promise<unknown>) => {
     if ((await act.run(fn)) !== undefined) await refresh();
@@ -98,6 +102,12 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
         <Pill tone={statusTone(closed ? 'Active' : 'info')}>{e.status}</Pill>
         {e.queueNo ? <Pill tone="acc">Queue #{e.queueNo}</Pill> : null}
         {e.reason ? <span className="text-[13px] text-ink-2">{e.reason}</span> : null}
+        {e.patient.allergies.map((a) => (
+          <Pill key={a.id} tone="crit">
+            {t('Allergy', 'Xasaasiyad')}: {a.substance} · {a.severity}
+          </Pill>
+        ))}
+        {e.patient.allergies.length === 0 ? <Pill>{t('No known allergies', 'Xasaasiyad lama yaqaan')}</Pill> : null}
       </PatientBand>
       <ErrorNote error={Object.keys(fe).length ? null : act.error} />
 
@@ -350,7 +360,7 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
             </ul>
           </Card>
 
-          {canSign && !closed ? (
+          {canSign && !closed && e.type === 'OPD' ? (
             <button className="btn btn-primary h-10 justify-center" disabled={act.busy} onClick={() => run(() => api(`/encounters/${id}/close`, { body: {} }))}>
               <CheckCircle2 size={16} />
               {t('Close visit', 'Xir booqashada')}
