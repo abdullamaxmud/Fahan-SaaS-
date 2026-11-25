@@ -76,7 +76,7 @@ export function paymentWebhookRoutes(deps: Deps): Router {
           : !inv ? 'invoice not found'
           : !['Issued', 'PartiallyPaid'].includes(inv.status) ? `invoice is ${String(inv.status).toLowerCase()}`
           : inv.currency !== ev.currency ? 'currency does not match the invoice'
-          : ev.amountMinor > inv.balanceMinor ? 'amount is more than the balance due'
+          : ev.amountMinor > inv.balanceMinor - (inv.insuranceHoldMinor ?? 0) ? 'amount is more than the balance due'
           : null;
         if (ev.status !== 'succeeded' || why) {
           // Unmatched money is parked for the billing officer rather than guessed at.

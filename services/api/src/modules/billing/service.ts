@@ -65,7 +65,9 @@ export async function applyPayment(
   p: { tenantId: ObjectId; invoice: Document; amountMinor: number; method: string; reference?: string; idempotencyKey: string; sessionId?: ObjectId; by: ObjectId; receivedOn: string; provider?: string },
 ): Promise<Document> {
   if (p.amountMinor <= 0) throw new AppError(400, 'INVALID_AMOUNT', 'Payment must be more than zero');
-  if (p.amountMinor > p.invoice.balanceMinor) throw new AppError(409, 'OVERPAYMENT', `Balance due is ${p.invoice.balanceMinor}; take no more than that`);
+  // Spec §5.20: the part an insurer is expected to pay is held, so the patient is never asked for it twice.
+  const patientDue = (p.invoice.balanceMinor as number) - ((p.invoice.insuranceHoldMinor as number) ?? 0);
+  if (p.amountMinor > patientDue) throw new AppError(409, 'OVERPAYMENT', `Patient balance due is ${patientDue}; take no more than that`);
   const c = await db.collection<{ _id: string; seq: number }>('counters').findOneAndUpdate({ _id: `rct:${p.receivedOn.slice(0, 4)}` }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: 'after', session: s });
   const receiptNo = `RCT-${p.receivedOn.slice(0, 4)}-${String(c!.seq).padStart(6, '0')}`;
   const doc = {
@@ -87,7 +89,7 @@ export async function applyPayment(
   };
   const ins = await db.collection('payments').insertOne(doc, { session: s });
   const paid = (p.invoice.paidMinor as number) + p.amountMinor;
-  const balance = (p.invoice.totalMinor as number) - paid;
+  const balance = (p.invoice.totalMinor as number) - paid - ((p.invoice.adjustmentMinor as number) ?? 0);
   const upd = await db.collection('invoices').updateOne(
     { _id: p.invoice._id, version: p.invoice.version },
     { $set: { paidMinor: paid, balanceMinor: balance, status: balance === 0 ? 'Paid' : 'PartiallyPaid' }, $inc: { version: 1 } },

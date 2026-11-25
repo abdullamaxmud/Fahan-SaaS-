@@ -20,6 +20,7 @@ import { encounterRoutes, timelineRoutes } from './modules/encounters/routes';
 import { equipmentRoutes } from './modules/equipment/routes';
 import { iamRoutes } from './modules/iam/routes';
 import { DIAGNOSTICS, RADIOLOGY, imagingRoutes } from './modules/imaging/routes';
+import { insuranceRoutes } from './modules/insurance/routes';
 import { inventoryRoutes } from './modules/inventory/routes';
 import { labRoutes } from './modules/lab/routes';
 import { maternityRoutes } from './modules/maternity/routes';
@@ -83,6 +84,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/bloodbank', bloodBankRoutes(deps));
   tenant.use('/accounting', accountingRoutes(deps));
   tenant.use('/billing', billingRoutes(deps));
+  tenant.use('/insurance', insuranceRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

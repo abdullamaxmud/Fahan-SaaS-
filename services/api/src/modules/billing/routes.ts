@@ -69,6 +69,9 @@ export function billingRoutes(deps: Deps): Router {
     paidMinor: i.paidMinor,
     refundedMinor: i.refundedMinor,
     balanceMinor: i.balanceMinor,
+    insuranceHoldMinor: i.insuranceHoldMinor ?? 0,
+    adjustmentMinor: i.adjustmentMinor ?? 0,
+    patientDueMinor: i.balanceMinor - (i.insuranceHoldMinor ?? 0),
     status: i.status,
     issuedOn: i.issuedOn ?? null,
     version: i.version,
@@ -261,6 +264,7 @@ export function billingRoutes(deps: Deps): Router {
     const { reason } = parse(Reason, req.body);
     const i = await loadInvoice(req);
     if (i.paidMinor > 0) throw Errors.conflict('HAS_PAYMENTS', 'Refund the payments before voiding');
+    if ((i.insuranceHoldMinor ?? 0) > 0) throw Errors.conflict('HAS_CLAIM', 'An insurer claim is open on this invoice; resolve it first');
     if (!['Draft', 'Issued'].includes(i.status)) throw Errors.conflict('INVALID_TRANSITION', `Invoice is ${String(i.status).toLowerCase()}`);
     const a = req.actor!;
     await txn(async (s) => {

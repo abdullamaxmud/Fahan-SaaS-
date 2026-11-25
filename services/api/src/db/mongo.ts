@@ -148,6 +148,11 @@ export class Data {
       // A provider transaction is applied once, however often the provider retries.
       db.collection('payment_events').createIndex({ tenantId: 1, provider: 1, transactionId: 1 }, { unique: true, name: 'one_event_per_transaction' }),
       db.collection('payment_events').createIndex({ tenantId: 1, status: 1, receivedAt: -1 }),
+      // Insurance (spec §5.20): one open claim per invoice.
+      db.collection('payers').createIndex({ tenantId: 1, code: 1 }, { unique: true }),
+      db.collection('policies').createIndex({ tenantId: 1, patientId: 1 }),
+      db.collection('claims').createIndex({ tenantId: 1, invoiceId: 1 }, { unique: true, partialFilterExpression: { open: true }, name: 'one_open_claim' }),
+      db.collection('claims').createIndex({ tenantId: 1, status: 1, createdAt: -1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
