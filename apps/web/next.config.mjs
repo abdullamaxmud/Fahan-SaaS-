@@ -4,7 +4,7 @@ const API = process.env.API_ORIGIN ?? 'http://localhost:4000';
 export default {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ['@fahan/policy'],
+  transpilePackages: ['@fahan/policy', '@fahan/terminology'],
   // Same-origin proxy so the API's HttpOnly, SameSite=Strict session cookie works in the browser.
   async rewrites() {
     return [{ source: '/api/v1/:path*', destination: `${API}/api/v1/:path*` }];

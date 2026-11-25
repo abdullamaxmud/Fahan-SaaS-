@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { ROLES, TENANT_ROLES, can, canGrantRole, effectivePermissions, effectiveScope, requiresMfa } from '../src';
 
 describe('role catalogue', () => {
-  it('has 54 roles with unique ids across 10 tiers', () => {
-    expect(ROLES).toHaveLength(54);
-    expect(new Set(ROLES.map((r) => r.id)).size).toBe(54);
+  it('has 55 roles with unique ids across 10 tiers', () => {
+    expect(ROLES).toHaveLength(55);
+    expect(new Set(ROLES.map((r) => r.id)).size).toBe(55);
     expect(new Set(ROLES.map((r) => r.tier)).size).toBe(10);
     expect(TENANT_ROLES.some((r) => r.id === 'platform-owner')).toBe(false);
   });

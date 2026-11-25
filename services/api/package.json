@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fahan/policy": "0.1.0",
+    "@fahan/terminology": "0.1.0",
     "@node-rs/argon2": "2.0.2",
     "cookie-parser": "1.4.7",
     "express": "5.1.0",

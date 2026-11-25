@@ -76,6 +76,7 @@ export const ROLES: readonly RoleDef[] = [
   r('designer', 2, 'Workflow & Form Designer', 'module:studio', 'hospital', 'studio:E org:V', 'Builds no-code forms and workflows. Nothing publishes without approval.', true),
   r('reception', 3, 'Reception & Registration', 'reception', 'branch', 'mpi:E appt:E adm:V amb:V bill:V portal:V', 'Registers patients and runs queues. Demographics only.'),
   r('admission-officer', 3, 'Admission Officer', 'reception', 'branch', 'adm:E bed:E mpi:V appt:V ins:V', 'Reserves beds and opens admissions.'),
+  r('records-officer', 3, 'Medical Records Officer', 'module:mpi', 'hospital', 'mpi:A appt:V', 'Verifies identities and approves patient merges. Merges link records and can be reversed.', true),
   r('physician', 4, 'Physician / Specialist', 'clinical', 'assigned-patient', 'mpi:V appt:V opd:S adm:E nur:V sx:E tele:S lab:E rad:E dx:E bb:E rx:S', 'Signs notes, diagnoses and prescriptions for assigned patients.', true),
   r('surgeon', 4, 'Surgeon', 'theatre', 'assigned-patient', 'mpi:V opd:S adm:E bed:V sx:S lab:E rad:E bb:E rx:S', 'Owns procedure records.', true),
   r('anesthetist', 4, 'Anesthetist', 'theatre', 'assigned-patient', 'mpi:V nur:V icu:E sx:S lab:V rx:S', 'Signs pre-anesthesia assessment and recovery.', true),
