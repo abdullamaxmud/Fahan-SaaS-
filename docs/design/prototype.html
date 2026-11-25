@@ -1,0 +1,778 @@
+<title>HospitalOS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: clinical workspace shell — permission-aware sidebar, sticky command bar, role-adaptive canvas.
+   Palette: "scrub teal" on green-biased neutrals; semantic + ESI triage colours kept separate from the accent. */
+:root{
+  --bg:#F1F5F3; --surface:#FFFFFF; --surface-2:#E7EEEB; --surface-3:#D9E4E0;
+  --ink:#0C1816; --ink-2:#465955; --ink-3:#768A85; --line:#D2DDD9; --line-2:#BFCDC8;
+  --accent:#0A7468; --accent-2:#075A51; --accent-soft:#D2EBE6; --on-accent:#FFFFFF;
+  --ok:#1C7A45; --ok-soft:#DCF0E3; --warn:#9F620B; --warn-soft:#F6EAD2; --crit:#BD2D39; --crit-soft:#F8DDE0; --info:#2A5CA6; --info-soft:#DEE7F6;
+  --esi1:#BD2D39; --esi2:#D2611D; --esi3:#B8950A; --esi4:#2C8653; --esi5:#2A5CA6;
+  --shadow:0 1px 2px rgba(12,24,22,.06),0 10px 30px -14px rgba(12,24,22,.22);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Instrument Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#09110F; --surface:#0F1A18; --surface-2:#15221F; --surface-3:#1C2C28;
+  --ink:#E2EDEA; --ink-2:#9BAEA9; --ink-3:#6B807A; --line:#20312D; --line-2:#2C403B;
+  --accent:#36C2AD; --accent-2:#62D7C5; --accent-soft:#0D3832; --on-accent:#03201B;
+  --ok:#4DC181; --ok-soft:#113021; --warn:#E2A945; --warn-soft:#33270F; --crit:#EF666F; --crit-soft:#391619; --info:#70A1EE; --info-soft:#13223B;
+  --esi1:#EF666F; --esi2:#EE8B4C; --esi3:#E0C247; --esi4:#4DC181; --esi5:#70A1EE;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#09110F; --surface:#0F1A18; --surface-2:#15221F; --surface-3:#1C2C28;
+  --ink:#E2EDEA; --ink-2:#9BAEA9; --ink-3:#6B807A; --line:#20312D; --line-2:#2C403B;
+  --accent:#36C2AD; --accent-2:#62D7C5; --accent-soft:#0D3832; --on-accent:#03201B;
+  --ok:#4DC181; --ok-soft:#113021; --warn:#E2A945; --warn-soft:#33270F; --crit:#EF666F; --crit-soft:#391619; --info:#70A1EE; --info-soft:#13223B;
+  --esi1:#EF666F; --esi2:#EE8B4C; --esi3:#E0C247; --esi4:#4DC181; --esi5:#70A1EE;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.6); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--surface)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-size:.92em;letter-spacing:0}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+.lucide{width:18px;height:18px;stroke-width:1.75;flex:none}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding-left:env(safe-area-inset-left,0px);scrollbar-width:thin}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
+.brand-mark svg{width:22px;height:22px}
+.brand b{font-family:var(--f-display);font-size:19px;font-weight:800;letter-spacing:-.02em}
+.brand small{display:block;font-size:11px;color:var(--ink-3);margin-top:-2px}
+.who{margin:4px 12px 8px;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);text-align:left;width:calc(100% - 24px)}
+.who:hover{border-color:var(--accent)}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--accent-soft);color:var(--accent-2);flex:none;font-family:var(--f-display)}
+.who-txt{min-width:0;flex:1}
+.who-txt b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-txt span{display:block;font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav{padding:6px 10px 12px;flex:1}
+.nav-group{margin-top:14px}
+.nav-group>.eyebrow{padding:0 10px 6px;display:block}
+.nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-weight:500;font-size:13.5px;cursor:pointer}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a.on{background:var(--accent-soft);color:var(--accent-2)}
+.nav a.locked{opacity:.5}
+.nav a .lv{margin-left:auto}
+.nav a span.t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-foot{border-top:1px solid var(--line);padding:12px 12px calc(14px + env(safe-area-inset-bottom,0px))}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink-2);padding:4px 6px}
+.tog{position:relative;width:34px;height:20px;border-radius:20px;background:var(--surface-3);border:0;flex:none;transition:background .2s}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}
+.tog[aria-pressed="true"]{background:var(--accent)}
+.tog[aria-pressed="true"]::after{transform:translateX(14px)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none;position:relative}
+.icon-btn:hover{border-color:var(--line-2);background:var(--surface-2)}
+.icon-btn .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--crit);border:2px solid var(--surface)}
+#menuBtn{display:none}
+.crumb{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
+.crumb .tenant{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);white-space:nowrap;min-width:0}
+.crumb .tenant b{font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.search{flex:1;max-width:460px;display:flex;align-items:center;gap:8px;padding:0 12px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);min-width:0;margin-left:auto}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0;color:var(--ink)}
+.search kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line-2);border-radius:5px;padding:1px 5px;color:var(--ink-3)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:none;background:var(--surface)}
+.seg button{border:0;background:none;padding:0 10px;height:34px;font-size:12px;font-weight:600;color:var(--ink-3)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.pulse{flex:none;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2)}
+.pulse svg{width:74px;height:22px}
+.pulse path{fill:none;stroke:var(--ok);stroke-width:1.8;stroke-linejoin:round;stroke-dasharray:160;animation:ecg 2.4s linear infinite}
+@keyframes ecg{from{stroke-dashoffset:160}to{stroke-dashoffset:-160}}
+@media (prefers-reduced-motion:reduce){.pulse path{animation:none;stroke-dasharray:none}*{transition:none!important}}
+
+.banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;background:var(--ink);color:var(--surface);padding:7px max(16px,env(safe-area-inset-right,0px)) 7px max(16px,env(safe-area-inset-left,0px))}
+.banner b{font-weight:600}
+.banner button{margin-left:auto;border:1px solid color-mix(in srgb,var(--surface) 35%,transparent);background:none;color:var(--surface);border-radius:7px;padding:3px 10px;font-size:12px}
+
+.view{padding-block:24px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.view-in{max-width:1380px;margin:0 auto;padding-inline:clamp(0px,1.6vw,20px);display:flex;flex-direction:column;gap:20px}
+
+/* ---------- page header ---------- */
+.ph{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:stretch}
+.ph-main{display:flex;flex-direction:column;gap:8px;justify-content:center;min-width:0}
+.ph h1{font-size:clamp(26px,3.2vw,38px);font-weight:800;line-height:1.08}
+.ph .sub{color:var(--ink-2);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px}
+.ph .sub span{display:inline-flex;align-items:center;gap:6px}
+.scope{display:flex;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px 14px 14px}
+.scope svg{width:112px;height:112px;flex:none}
+.scope ol{list-style:none;margin:0;padding:0;font-size:12px;display:grid;gap:2px}
+.scope li{display:flex;align-items:center;gap:7px;color:var(--ink-3)}
+.scope li i.b{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--line-2);flex:none}
+.scope li.in{color:var(--ink)}
+.scope li.in i.b{background:var(--accent);border-color:var(--accent)}
+.scope li.at{font-weight:700;color:var(--accent-2)}
+
+/* ---------- primitives ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0}
+.card-h{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;flex-wrap:wrap}
+.card-h h3{font-size:15px;font-weight:650}
+.card-h .r{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card-b{padding:4px 16px 16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .v{font-family:var(--f-display);font-size:28px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .d{font-size:12px;display:flex;gap:6px;align-items:center;color:var(--ink-2)}
+.kpi .l{font-size:12.5px;color:var(--ink-2);font-weight:500}
+.g2{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:16px;align-items:start}
+.g2e{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;background:var(--surface-2);color:var(--ink-2)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.pill.plain::before{display:none}
+.ok{background:var(--ok-soft);color:var(--ok)} .warn{background:var(--warn-soft);color:var(--warn)} .crit{background:var(--crit-soft);color:var(--crit)} .info{background:var(--info-soft);color:var(--info)} .acc{background:var(--accent-soft);color:var(--accent-2)}
+.lv{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 4px;border-radius:5px;font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+.lv-V{background:var(--surface-3);color:var(--ink-2)} .lv-E{background:var(--info-soft);color:var(--info)} .lv-S{background:var(--accent-soft);color:var(--accent-2)} .lv-A{background:var(--ink);color:var(--surface)}
+.btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);font-weight:600;font-size:13px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.pri:hover{background:var(--accent-2)}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.btn.danger{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,var(--line))}
+.btn .lucide{width:16px;height:16px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:8px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+td .s{display:block;font-size:12px;color:var(--ink-3)}
+.r-num{text-align:right;font-variant-numeric:tabular-nums}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:flex-start;padding:11px 16px;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--ink-2)}
+.li .bd{flex:1;min-width:0}
+.li .bd b{font-weight:600;display:block}
+.li .bd span{font-size:12.5px;color:var(--ink-2)}
+.li .rt{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.note{display:flex;gap:10px;padding:11px 13px;border-radius:10px;font-size:13px;align-items:flex-start}
+.note .lucide{margin-top:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2)}
+.cite{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px;background:var(--accent-soft);color:var(--accent-2);vertical-align:1px;white-space:nowrap}
+.bar{height:8px;border-radius:8px;background:var(--surface-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px}
+
+/* pipeline / state machine */
+.pipe{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:2px 0}
+.pipe .st{flex:1;min-width:112px;position:relative;padding:10px 14px 10px 22px;background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)}
+.pipe .st:first-child{clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);padding-left:14px;border-radius:10px 0 0 10px;border-left:1px solid var(--line)}
+.pipe .st+.st{margin-left:-6px}
+.pipe .st b{display:block;font-family:var(--f-display);font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1}
+.pipe .st span{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.pipe .st.cur{background:var(--accent);color:var(--on-accent)}
+.pipe .st.cur span{color:var(--on-accent);opacity:.85}
+.pipe .st.done{background:var(--accent-soft)}
+.rail{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.rail .step{font-size:12.5px;padding:4px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+.rail .ar{color:var(--ink-3);font-size:12px}
+
+/* wristband */
+.band{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;padding:16px 18px;border-radius:16px;background:var(--surface);border:1px solid var(--line);position:relative;overflow:hidden}
+.band::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:repeating-linear-gradient(180deg,var(--accent) 0 10px,var(--accent-2) 10px 20px)}
+.band h2{font-size:24px;font-weight:800}
+.band .meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2);margin-top:4px}
+.barcode{display:flex;align-items:stretch;height:40px;gap:1px}
+.barcode i{background:var(--ink);display:block}
+.barcode-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.allergy{background:var(--crit-soft);color:var(--crit);border-radius:8px;padding:6px 10px;font-weight:600;font-size:12.5px;display:inline-flex;gap:6px;align-items:center}
+
+/* beds */
+.ward{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.bed{border:1px solid var(--line);border-radius:10px;padding:8px 9px;min-height:76px;display:flex;flex-direction:column;gap:3px;background:var(--surface);text-align:left;font-size:12px;position:relative}
+.bed b{font-family:var(--f-mono);font-size:11.5px;font-weight:600}
+.bed .nm{font-weight:600;font-size:12.5px;line-height:1.25;color:var(--ink)}
+.bed .stt{font-size:11px;color:var(--ink-3);margin-top:auto}
+.bed.O{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.bed.A{background:var(--surface);border-style:dashed}
+.bed.R{background:var(--info-soft);border-color:color-mix(in srgb,var(--info) 30%,var(--line))}
+.bed.C{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,var(--line))}
+.bed.I{background:var(--crit-soft);border-color:color-mix(in srgb,var(--crit) 35%,var(--line))}
+.bed.sel{outline:2px solid var(--ink);outline-offset:1px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1px solid var(--line-2)}
+
+/* ER board */
+.board{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
+.col{background:var(--surface-2);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-h{display:flex;align-items:center;gap:8px;padding:4px 4px 2px;font-weight:700;font-size:13px}
+.col-h .sq{width:12px;height:12px;border-radius:3px}
+.col-h .c{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+.pc{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:9px;padding:8px 10px;font-size:12.5px}
+.pc b{display:block;font-size:13px}
+.pc .m{display:flex;justify-content:space-between;color:var(--ink-3);font-size:11.5px;margin-top:3px;gap:6px}
+
+/* theatre */
+.tl{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 10px;align-items:center;min-width:560px}
+.tl-hours{position:relative;height:18px;font-size:11px;color:var(--ink-3);font-family:var(--f-mono)}
+.tl-hours span{position:absolute;transform:translateX(-50%)}
+.tl-row{position:relative;height:50px;background:repeating-linear-gradient(90deg,var(--surface-2) 0 1px,transparent 1px 10%);border:1px solid var(--line);border-radius:9px}
+.tl-blk{position:absolute;top:5px;bottom:5px;border-radius:7px;padding:4px 8px;font-size:11.5px;line-height:1.25;overflow:hidden;border:1px solid transparent}
+.tl-blk b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-lab{font-weight:700;font-size:13px}
+.blk-done{background:var(--surface-3);color:var(--ink-2)}
+.blk-live{background:var(--accent);color:var(--on-accent)}
+.blk-plan{background:var(--info-soft);color:var(--info);border-color:color-mix(in srgb,var(--info) 25%,transparent)}
+.blk-oos{background:repeating-linear-gradient(135deg,var(--crit-soft) 0 8px,transparent 8px 16px);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 35%,transparent)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px dashed var(--line);font-size:13px;cursor:pointer}
+.check:first-child{border-top:0}
+.check input{width:17px;height:17px;accent-color:var(--accent);margin-top:2px;flex:none}
+
+/* switch / feature */
+.feat{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line)}
+.feat:first-child{border-top:0}
+.feat .bd{flex:1;min-width:0}
+.feat .bd b{font-weight:600;display:block;font-size:13.5px}
+.feat .bd span{font-size:12px;color:var(--ink-3)}
+
+/* matrix */
+.mx th.rot{writing-mode:vertical-rl;transform:rotate(180deg);height:150px;padding:8px 4px;text-align:left;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:600;color:var(--ink-2)}
+.mx td,.mx th{padding:5px 4px;text-align:center}
+.mx td.rn,.mx th.rn{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;padding-left:16px;padding-right:12px;white-space:nowrap;min-width:210px}
+.mx tr.tier td{background:var(--surface-2);text-align:left;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:6px 16px}
+.mx tr.tier td.rn{background:var(--surface-2)}
+.mx .x{color:var(--line-2)}
+.mx tbody tr:hover td{background:var(--surface-2)}
+
+/* role directory */
+.roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.rc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;min-width:0}
+.rc:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.rc .top-r{display:flex;align-items:center;gap:10px}
+.rc h3{font-size:15px;font-weight:650;font-family:var(--f-body);letter-spacing:0}
+.rc p{margin:0;font-size:12.5px;color:var(--ink-2)}
+.rc .ft{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.tier-h{display:flex;align-items:baseline;gap:12px;margin:6px 0 -4px}
+.tier-h h2{font-size:20px;font-weight:700}
+.tier-h .n{font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:80;background:color-mix(in srgb,var(--ink) 45%,transparent);display:grid;place-items:start center;padding:max(5vh,calc(env(safe-area-inset-top,0px) + 16px)) max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.sheet{width:min(980px,100%);background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.sheet-h{display:flex;align-items:center;gap:12px;padding:18px 20px 12px;flex-wrap:wrap}
+.sheet-h h2{font-size:24px;font-weight:800}
+.sheet-h p{margin:0;color:var(--ink-2);font-size:13px;flex-basis:100%}
+.sheet-s{margin:0 20px 6px;display:flex;align-items:center;gap:8px;border:1px solid var(--line-2);border-radius:10px;padding:0 12px;height:42px;background:var(--surface-2)}
+.sheet-s input{border:0;background:none;outline:0;flex:1;font-size:14px;min-width:0}
+.sheet-b{padding:8px 20px 20px;max-height:62vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px 18px}
+.tg h4{margin:10px 0 6px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);display:flex;gap:8px}
+.tg h4 .mono{color:var(--accent-2)}
+.ro{display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:9px;border:1px solid transparent;background:none;text-align:left}
+.ro:hover{background:var(--surface-2)}
+.ro.on{border-color:var(--accent);background:var(--accent-soft)}
+.ro .avatar{width:28px;height:28px;font-size:10.5px}
+.ro b{display:block;font-size:13px;font-weight:600}
+.ro span{display:block;font-size:11.5px;color:var(--ink-3)}
+
+.toast{position:fixed;z-index:90;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px)}
+.denied{display:grid;place-items:center;text-align:center;padding:60px 16px;gap:14px}
+.denied .code{font-family:var(--f-mono);font-size:13px;padding:6px 12px;border-radius:8px;background:var(--crit-soft);color:var(--crit)}
+.denied h1{font-size:clamp(30px,5vw,52px);font-weight:800}
+.denied p{max-width:56ch;color:var(--ink-2);margin:0}
+.phone{max-width:420px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:12px}
+.ai-p{font-size:14px;line-height:1.65;margin:0 0 10px;max-width:72ch}
+.mfa{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:var(--surface-2);margin-top:10px}
+.mfa input{width:120px;height:32px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);padding:0 10px;font-family:var(--f-mono);letter-spacing:.3em}
+.scrim{display:none}
+
+@media (max-width:1180px){.g2,.g3{grid-template-columns:minmax(0,1fr)}.ph{grid-template-columns:minmax(0,1fr)}.scope{justify-self:start}}
+@media (max-width:960px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;inset:0 auto 0 0;width:min(300px,86vw);z-index:70;transform:translateX(-105%);transition:transform .25s ease;padding-top:env(safe-area-inset-top,0px)}
+  .app.nav-open .side{transform:none;box-shadow:var(--shadow)}
+  .app.nav-open .scrim{display:block;position:fixed;inset:0;z-index:65;background:color-mix(in srgb,var(--ink) 40%,transparent)}
+  #menuBtn{display:grid}
+  .pulse,.crumb .tenant small{display:none}
+  .g2e{grid-template-columns:minmax(0,1fr)}
+  .ward{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .search{display:none}.crumb{flex:1}.seg.cur{display:none}
+  .band{grid-template-columns:minmax(0,1fr)}.barcode-wrap{align-items:flex-start}
+  .ward{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .scope{width:100%}.scope svg{width:92px;height:92px}
+  td,th{padding-left:12px;padding-right:12px}
+  .kpi .v{font-size:24px}
+}
+@media (max-width:420px){.seg.lang{display:none}}
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Main navigation">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-5 3 10 3-8 2 3h6"/></svg></div>
+      <div><b>HospitalOS</b><small id="brandSub">Hospital operating platform</small></div>
+    </div>
+    <button class="who" id="whoBtn" data-act="switch" aria-label="Switch role"></button>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="switch-row"><span id="lockedLbl">Show modules this role can't open</span><button class="tog" id="lockTog" data-act="locked" aria-pressed="false" aria-labelledby="lockedLbl"></button></div>
+    </div>
+  </aside>
+  <div class="scrim" data-act="closenav"></div>
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn" id="menuBtn" data-act="opennav" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+      <div class="crumb" id="crumb"></div>
+      <label class="search"><i data-lucide="search"></i><input id="q" placeholder="Search patient, MRN, order…" aria-label="Search"><kbd>Ctrl K</kbd></label>
+      <div class="pulse" title="All core services healthy"><svg viewBox="0 0 120 24" aria-hidden="true"><path d="M0 13H34L38 5L43 21L47 13H64L67 9L70 13H120"/></svg><span>API 312 ms</span></div>
+      <div class="seg lang" role="group" aria-label="Language"><button data-act="lang" data-v="en" aria-pressed="true">EN</button><button data-act="lang" data-v="so" aria-pressed="false">SO</button></div>
+      <button class="icon-btn" data-act="theme" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
+      <button class="icon-btn" data-act="notify" aria-label="Notifications"><i data-lucide="bell"></i><span class="dot"></span></button>
+    </header>
+    <div class="banner" id="banner"></div>
+    <main class="view" id="view"><div class="view-in" id="viewIn"></div></main>
+  </div>
+</div>
+
+<div class="modal" id="switcher" hidden role="dialog" aria-modal="true" aria-labelledby="swT">
+  <div class="sheet">
+    <div class="sheet-h"><h2 id="swT">Who's working today?</h2><button class="icon-btn" style="margin-left:auto" data-act="closeswitch" aria-label="Close"><i data-lucide="x"></i></button>
+      <p id="swP"></p></div>
+    <label class="sheet-s"><i data-lucide="search"></i><input id="swQ" placeholder="Find a role — e.g. radiologist, cashier, midwife" aria-label="Find a role"></label>
+    <div class="sheet-b" id="swB"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<script>
+/* ================= DATA — taken from the HospitalOS developer specification ================= */
+const GROUPS=[
+ ['platform','Platform','Madasha'],['care','Patient care','Daryeelka bukaanka'],['dx','Diagnostics','Baaritaannada'],
+ ['meds','Medicines & supply','Daawooyinka & sahayda'],['rev','Revenue','Dakhliga'],['people','People','Dadka'],
+ ['intel','Intelligence','Sirdoonka'],['admin','Administration','Maamulka'],['patient','Patient','Bukaanka']];
+// key, spec#, name, somali, icon, group, purpose, actors, entities, states, invariant, acceptance
+const MOD=[
+ ['plat','3.1','Platform console','Maamulka madasha','globe','platform','Create hospital tenants, delegate hospital administrators, watch platform health. The control plane carries no clinical data.','Platform owner','tenants, plans, platform_health','Draft,Active,Suspended,Archived','Owner privilege is non-delegable; bootstrap runs once and is then disabled.','No ordinary user, custom role or AI agent can grant itself platform-owner privilege.'],
+ ['org','5.1','Organization & facilities','Ururka & xarumaha','building-2','admin','Hospital profiles, branches, departments, service catalog, working hours, capacity.','Tenant admin, branch manager','organizations, hospitals, branches, departments, service_catalog','Draft,Active,Suspended,Archived','Unique scope codes, branch timezone; no cross-tenant reference.','Hospital and departments can be configured and audited without cross-scope leakage.'],
+ ['iam','5.2','Users, roles & permissions','Isticmaalayaasha & doorarka','key-round','admin','MFA, user invitations, role policies, granular scopes, access reviews.','Platform owner, hospital admin','users, roles, permissions, user_grants, sessions','Invited,Active,Suspended,Deactivated','Deny by default; owner elevation non-delegable; revocation immediate.','A forbidden endpoint returns 403 even if the menu is hidden.'],
+ ['mpi','5.3','Patients','Bukaanka','users','care','Patient creation, MRNs, demographics, duplicates, contacts, identity merge.','Reception, clinical registration','patients, patient_identifiers, merge_requests','Provisional,Verified,Archived','Medical identity immutable; merges are approved and reversible by linking.','Cross-facility MRN mapping and duplicate prevention verified.'],
+ ['appt','5.4','Appointments & queues','Ballamaha & safafka','calendar-clock','care','Slot templates, booking, check-in, rescheduling, waitlist, no-show.','Reception, clinician','appointments, provider_schedules, queues','Requested,Confirmed,CheckedIn,Completed','No double-booking of exclusive resources; cancellation audit.','Concurrent booking does not create conflicting appointments.'],
+ ['opd','5.5','Outpatient (OPD)','Bukaan-socodka','stethoscope','care','Visit creation, complaints, history, examination, encounter closure.','Physician, nurse','encounters, clinical_notes, observations','Open,InProgress,Signed,Closed','Only assigned clinicians edit unsigned entries; signed corrections append.','OPD visit links notes, orders, diagnosis and invoice.'],
+ ['er','5.6','Emergency','Gurmadka degdegga','siren','care','Triage records, prioritization, tracking board, observation and admission.','Emergency clinician, nurse','emergency_visits, triage_assessments','Arrived,Triaged,Treating,Dispositioned','Clinical triage rules approved by hospital; audit all overrides.','Real-time board and handover work under load.'],
+ ['adm','5.7','Admissions & discharge','Dhigista & ka-bixitaanka','door-open','care','Admission criteria, referrals, transfer, discharge summaries and follow-up.','Ward physician, admission officer','admissions, transfers, discharge_summaries','Requested,Admitted,Transferred,Discharged','No simultaneous active admission contradictions; discharge reconciliation.','Admission-to-discharge audit trail complete.'],
+ ['bed','5.8','Wards & beds','Qolalka & sariiraha','bed-double','care','Ward maps, bed availability, assignment, cleaning and maintenance.','Ward manager, nurse','wards, rooms, beds, bed_assignments','Available,Reserved,Occupied,Cleaning','One active occupant per bed; isolation/cohort restrictions.','Atomic bed assignment passes race-condition test.'],
+ ['nur','5.9','Nursing & vitals','Kalkaalinta & calaamadaha','heart-pulse','care','Vital charts, care plans, handovers, medication administration notes.','Nurse, shift lead','vital_signs, care_plans, nursing_notes, administrations','Recorded,Verified,Corrected','Timestamp, source and unit required; care-plan ownership tracked.','Time-series vitals and handover visible to authorized team.'],
+ ['icu','5.10','ICU / NICU / PICU','ICU / NICU / PICU','activity','care','Critical care observations, specialized beds, monitoring integration hooks.','Critical-care team','critical_care_stays, device_observations','Open,Monitored,Transferred,Closed','Device feeds must be labeled; no unvalidated auto-treatment.','Clinical team can review trend and source provenance.'],
+ ['sx','5.16','Surgery & theatre','Qalliinka','scissors','care','Theatre calendars, pre-op checklists, procedure documentation, recovery.','Surgeon, anesthetist, theatre nurse','surgery_cases, theatre_slots, perioperative_notes','Planned,Prepared,InProcedure,Recovery,Completed','Consent, checklists, sign-offs and room conflicts enforced.','Procedure timeline and resource use independently audited.'],
+ ['mat','5.17','Maternity & pediatrics','Umulaha & carruurta','baby','care','Antenatal records, deliveries, newborn linking and child services.','Obstetrician, midwife, pediatrician','antenatal_visits, deliveries, newborn_records','Antenatal,Delivery,Postnatal','Mother-newborn linked identifiers; caregiver permissions reviewed.','Separate newborn record and longitudinal linkage verified.'],
+ ['tele','5.27','Telemedicine','Telemedicine','video','care','Virtual visit metadata, appointment links, consent and clinical notes.','Clinician, patient','telehealth_sessions, telehealth_consents','Scheduled,Connected,Completed','Do not record calls without approved consent and policy.','Visit documentation joins longitudinal EHR.'],
+ ['amb','5.25','Ambulance & referrals','Ambalaas & gudbinta','ambulance','care','Referral requests, ambulance dispatch, arrival handover and transports.','Dispatch, emergency staff','referrals, ambulance_runs, vehicle_status','Requested,Dispatched,Arrived,HandedOver','Location access bounded, emergency handover audited.','Transfer events linked to destination encounter.'],
+ ['lab','5.11','Laboratory','Shaybaarka','flask-conical','dx','Order catalog, sample labels, collection, accessioning, validation, results.','Ordering clinician, lab technician, pathologist','lab_orders, specimens, lab_results, lab_qc','Ordered,Collected,Processing,Verified,Released','Critical results escalation; sample chain of custody; QC.','Result cannot be released without authorized verification.'],
+ ['rad','5.12','Radiology','Raajada & sawirka','scan-line','dx','X-ray, CT, MRI, ultrasound workflows, scheduling, reporting and PACS links.','Radiographer, radiologist, clinician','imaging_orders, imaging_studies, radiology_reports','Ordered,Scheduled,Acquired,Interpreted,Final','DICOM accession / StudyInstanceUID refs; critical-findings notification.','Images retrievable with authorization; only signed reports are final.'],
+ ['dx','5.13','ECG, echo & endoscopy','ECG, echo & baaritaanno','waves','dx','Cardiac tests and additional specialized diagnostics with templates.','Specialist, technician','diagnostic_orders, diagnostic_reports','Ordered,Performed,Signed,Final','Device-specific data mapping documented; approval required.','Every report attaches to patient and encounter.'],
+ ['bb','5.18','Blood bank','Bangiga dhiigga','droplet','dx','Donor inventory integration, unit reservations, matching documentation.','Blood bank specialist','blood_units, transfusion_orders, transfusion_events','Requested,Matched,Issued,Administered','Clinical compatibility decisions remain under approved protocols.','Unit-level traceability and recall supported.'],
+ ['rx','5.14','Pharmacy','Farmashiyaha','pill','meds','Medication catalog, orders, dispensing, returns, substitutions, stock.','Physician, pharmacist','medication_orders, dispense_events, medication_catalog','Draft,Signed,Verified,Dispensed','Only authorized prescriber signs orders; pharmacist checks status and stock.','Dispense operation is idempotent and traceable by batch.'],
+ ['inv','5.15','Inventory','Kaydka','package','meds','Stock movements, batch/expiry, multi-store transfer, low stock alerts.','Storekeeper, procurement','items, stock_lots, inventory_movements','Requested,Approved,Received,Transferred','Never allow negative available quantity without explicit policy.','Lot stock remains consistent under concurrent issue.'],
+ ['proc','5.23','Procurement','Iibka','truck','meds','Requests, quotations, purchase orders, goods receipt, supplier bills.','Procurement officer','suppliers, purchase_orders, receipts, supplier_invoices','Requested,Approved,Ordered,Received,Closed','3-way match PO / receipt / invoice; approval limits.','Duplicate supplier invoice flagged before payment.'],
+ ['eq','5.24','Equipment & CSSD','Qalabka & CSSD','wrench','meds','Asset service, calibration, sterilization, maintenance, housekeeping tasks.','Biomedical, facilities, CSSD','assets, maintenance_jobs, sterilization_batches','Available,Scheduled,OutOfService,Released','Maintenance status may block bookings; safety certification tracked.','Broken device cannot be scheduled for exams.'],
+ ['bill','5.19','Billing & cashier','Biilasha & khasnajiga','receipt','rev','Price calculation, invoices, receipts, cashier sessions, cancellations.','Cashier, billing officer','invoices, invoice_items, payment_intents, receipts','Draft,Issued,PartiallyPaid,Paid','Price snapshots, no duplicate charges, refunds separately posted.','Invoice balance reconciles against payment allocations.'],
+ ['ins','5.21','Insurance & claims','Caymiska & sheegashooyinka','shield-check','rev','Payer contracts, coverage, authorization, claim submission and remittance.','Insurance officer','policies, claims, claim_lines, remittances','Draft,Submitted,Accepted,Settled','Track denial reasons and patient responsibility; no silent claim changes.','Claims lifecycle reconciles with invoices and payment status.'],
+ ['acct','5.20','Accounting','Xisaabaadka','landmark','rev','Chart of accounts, journal posting, expenses, cost centers, P&L, cash flow.','Finance director, accountant','journal_entries, accounts, expenses, periods','Draft,Approved,Posted,Reversed','Balanced debit/credit, immutable closed periods, segregation of duties.','Revenue and expense reports reconcile to ledger.'],
+ ['hr','5.22','HR, rosters & payroll','Shaqaalaha & mushaharka','briefcase','people','Employee credentials, contracts, shifts, leave, attendance and payroll.','HR, managers','employees, rosters, attendance, payroll_runs','Draft,Approved,Paid,Archived','Restricted salary access; credential expiry alerts; approvals.','Payroll totals reconcile to approved ledger posting.'],
+ ['qual','5.28','Quality & infection control','Tayada & xakamaynta infekshanka','clipboard-check','intel','Quality metrics, incident reports, infection surveillance and actions.','Quality officer, IPC staff','incidents, quality_metrics, ipc_reviews','Reported,Triaged,Investigating,Closed','Confidential incident permissions; trend aggregation.','Quality dashboard can drill down only with authorization.'],
+ ['bi','5.29','Reports & BI','Warbixinnada & BI','bar-chart-3','intel','Operational dashboards, exports, report templates and monthly snapshots.','Managers, analysts','analytics_snapshots, report_definitions, report_runs','Draft,Generated,Reviewed,Published','Metric definitions versioned; suppress small sensitive cohorts.','Re-run report produces same numbers on same source snapshot.'],
+ ['aifin','5.30','AI financial intelligence','AI maaliyadda','sparkles','intel','Explain revenue, expense, service mix, variance, forecast and anomalies.','Authorized finance, owner','ai_runs, ai_insights, metric_snapshots','Queued,Generated,Reviewed,Published','AI is read-only; financial figures come from reconciled computed metrics.','AI totals match the official report and carry the source period.'],
+ ['aidis','5.31','AI disease intelligence','AI cudurrada','microscope','intel','Diagnosis prevalence within hospital data, age/department/time cohorts, signals.','Clinical governance, authorized admin','diagnosis_facts, disease_aggregates, ai_runs','Computed,Validated,Reviewed','Separate provisional and confirmed cases; no population prevalence claims.','Counts avoid repeat-patient double counting by metric definition.'],
+ ['ai360','5.32','Hospital 360 report','Warbixinta 360','file-text','intel','Scheduled executive summary combining finance, clinical, beds, quality and operations.','Owner, finance, clinical reviewers','report_runs, ai_report_sections, approvals','Queued,Built,Reviewed,Approved,Published','Human approval, source lineage, version, redaction, corrections.','Monthly report export contains verified citations to internal metrics.'],
+ ['studio','5.33','Forms & workflow studio','Foomamka & socodka','workflow','admin','Custom fields, forms, approval rules, triggers and allowed actions.','Owner / delegated designers','form_definitions, workflow_definitions, workflow_runs','Draft,Tested,Approved,Published,Retired','No arbitrary code execution; schema migrations reversible; safe sandbox.','Versioned form continues reading historical submissions.'],
+ ['intg','5.34','Integrations & API','Isku-xirka & API','plug','admin','FHIR facade, HL7 adapters, DICOMweb, webhooks and service credentials.','Integration engineer','integrations, webhook_deliveries, api_clients','Configured,Tested,Enabled,Suspended','Scoped tokens, signatures, replay protection and failure queues.','Integration tests demonstrate mapping fidelity.'],
+ ['sec','5.35','Security & audit','Amniga & hubinta','lock','admin','Protected audit trail, SIEM, monitoring, backups and incident response.','Security auditor, DevOps','audit_events, access_reviews, alerts','Detected,Investigated,Remediated,Closed','No silent tampering; independent log storage; monitored restores.','Restore and simulated incident drills pass documented criteria.'],
+ ['portal','5.26','Patient portal','Bogga bukaanka','smartphone','patient','Appointment booking, secure messaging, approved results, invoices, consent.','Patient, caregiver','portal_accounts, messages, notifications','Registered,Verified,Active,Suspended','Clinician-reviewed release of sensitive results; proxy rules.','A patient cannot see another patient’s data.'],
+].map(a=>({k:a[0],num:a[1],n:a[2],so:a[3],ic:a[4],g:a[5],purpose:a[6],actors:a[7],ent:a[8],st:a[9].split(','),rule:a[10],acc:a[11]}));
+const M=Object.fromEntries(MOD.map(m=>[m.k,m]));
+
+const TIERS=[[1,'Platform (SaaS)','Madasha (SaaS)'],[2,'Hospital administration','Maamulka isbitaalka'],[3,'Front desk','Soo-dhoweynta'],[4,'Clinical care','Daryeelka caafimaadka'],[5,'Diagnostics & pharmacy','Baaritaanka & farmashiyaha'],[6,'Finance','Maaliyadda'],[7,'Operations','Hawlgallada'],[8,'Quality & governance','Tayada & hufnaanta'],[9,'Security & technical','Amniga & farsamada'],[10,'Patients & external','Bukaanka & dibadda']];
+const SCOPES=['platform','tenant','hospital','branch','department','assigned-patient','own-record'];
+const LV={V:'View',E:'Create & edit',S:'Sign, verify or dispense',A:'Approve & configure'};
+function parseAcc(s){const o={};s.split(' ').filter(Boolean).forEach(p=>{const[k,v]=p.split(':');o[k]=v});return o}
+const R=(id,t,n,p,home,scope,acc,note,mfa)=>({id,t,n,p,home,scope,acc:parseAcc(acc),note,mfa:!!mfa});
+const ROLES=[
+ R('platform-owner',1,'Platform Owner','Ilhaan Daahir','platform','platform','plat:A org:A iam:A intg:V sec:V bi:V','Creates hospital tenants and appoints their admins. Cannot open patient records. Owner rights are non-delegable and were created once by an audited CLI bootstrap.',1),
+ R('super-admin',2,'Hospital Super Admin','Mustafe Xirsi','admin','tenant','org:A iam:A studio:A intg:A sec:V bi:V aifin:V ai360:A qual:V hr:V','Controls modules, roles, forms, workflows and AI policy for this hospital only. Patient access stays relationship-bound.',1),
+ R('hospital-admin',2,'Hospital Administrator','Nimco Barre','admin','hospital','org:E iam:E studio:V bi:V aifin:V ai360:V hr:V qual:V sec:V','Runs departments, users and services. Cannot grant permissions above their own ceiling.',1),
+ R('branch-manager',2,'Branch Manager','Yaasiin Cumar','admin','branch','org:E iam:V appt:V bed:V bi:V hr:V inv:V eq:V','Manages one branch: hours, capacity, staff coverage. Cannot see other branches.',1),
+ R('designer',2,'Workflow & Form Designer','Ruqiya Shire','module:studio','hospital','studio:E org:V','Builds no-code forms and workflows. Nothing publishes without approval and no arbitrary code runs.',1),
+ R('reception',3,'Reception & Registration','Ifrah Muxumed','reception','branch','mpi:E appt:E adm:V amb:V bill:V portal:V','Registers patients and runs queues. Sees demographics, not clinical notes. Merges need approval.'),
+ R('admission-officer',3,'Admission Officer','Bashiir Gedi','reception','branch','adm:E bed:E mpi:V appt:V ins:V','Reserves beds and opens admissions. Bed assignment is atomic and idempotent.'),
+ R('physician',4,'Physician / Specialist','Dr. Hodan Warsame','clinical','assigned-patient','mpi:V appt:V opd:S adm:E nur:V sx:E tele:S lab:E rad:E dx:E bb:E rx:S','Signs notes, diagnoses and prescriptions for assigned patients. Signed entries are corrected by amendment only.',1),
+ R('surgeon',4,'Surgeon','Dr. Abshir Samatar','theatre','assigned-patient','mpi:V opd:S adm:E bed:V sx:S lab:E rad:E bb:E rx:S','Owns procedure records. Consent and safety checklist are enforced before incision.',1),
+ R('anesthetist',4,'Anesthetist','Dr. Leyla Osman','theatre','assigned-patient','mpi:V nur:V icu:E sx:S lab:V rx:S','Signs pre-anesthesia assessment and recovery. Room conflicts are blocked.',1),
+ R('theatre-nurse',4,'Theatre Nurse','Zamzam Hirsi','theatre','department','mpi:V nur:E sx:E inv:V eq:V','Runs sign-in, time-out and sign-out checklists. Cannot sign the operative note.'),
+ R('nurse',4,'Nurse','Deeqa Ali','ward','assigned-patient','mpi:V opd:E adm:V bed:V nur:E lab:E','Records vitals with time, source and unit. Corrections are appended, never overwritten.'),
+ R('shift-lead',4,'Nursing Shift Lead','Sagal Abdi','ward','department','mpi:V adm:V bed:E nur:S hr:V','Verifies nursing records and owns the handover.'),
+ R('ward-manager',4,'Ward Manager','Xaawo Elmi','ward','department','mpi:V adm:E bed:A nur:S inv:V hr:V qual:E','Controls the bed board, cleaning and isolation cohorts for the ward.'),
+ R('ward-physician',4,'Ward Physician','Dr. Mahad Nuur','clinical','assigned-patient','mpi:V opd:S adm:S bed:V nur:V lab:E rad:E rx:S','Admits, transfers and signs discharge summaries.',1),
+ R('er-clinician',4,'Emergency Clinician','Dr. Liibaan Dualeh','er','department','mpi:E er:S adm:E bed:V amb:V lab:E rad:E rx:S','Triage overrides are audited. Can request admission and bed reservation.',1),
+ R('er-nurse',4,'Emergency Nurse','Ubah Kahin','er','department','mpi:E er:E nur:E bed:V amb:V lab:E','Records triage and observations on the tracking board.'),
+ R('icu-team',4,'ICU / NICU / PICU Team','Dr. Fowsiya Aw-Cali','ward','department','mpi:V nur:E icu:S bed:V lab:E rad:E dx:E rx:S','Reviews labelled device feeds. No unvalidated auto-treatment.',1),
+ R('obstetrician',4,'Obstetrician','Dr. Ladan Ismail','clinical','assigned-patient','mpi:V opd:S sx:E mat:S lab:E rad:E bb:E rx:S','Owns antenatal and delivery records. Newborn gets a separate, linked record.',1),
+ R('midwife',4,'Midwife','Maryan Gure','clinical','assigned-patient','mpi:V nur:E mat:E lab:E','Records antenatal visits and deliveries for assigned mothers.'),
+ R('pediatrician',4,'Pediatrician','Dr. Anwar Bile','clinical','assigned-patient','mpi:V opd:S icu:E mat:S lab:E rx:S','Child services. Caregiver access follows reviewed proxy rules.',1),
+ R('bloodbank',4,'Blood Bank Specialist','Shukri Dhimbil','lab','department','mpi:V bb:S lab:E inv:V','Unit-level traceability and recall. Compatibility follows approved protocols.'),
+ R('tele-clinician',4,'Telemedicine Clinician','Dr. Idil Faarax','clinical','assigned-patient','mpi:V appt:V opd:S tele:S lab:E rx:S portal:E','Runs virtual visits. Calls are never recorded without consent.',1),
+ R('lab-tech',5,'Laboratory Technician','Hamse Aar','lab','department','mpi:V lab:E inv:V eq:V','Accessions and processes samples. Cannot release results.'),
+ R('pathologist',5,'Pathologist','Dr. Siciid Xuseen','lab','department','mpi:V lab:A bb:V qual:V','Verifies and releases results. Owns critical-value escalation.',1),
+ R('radiographer',5,'Radiographer','Mowliid Kaariye','rad','department','mpi:V appt:V rad:E eq:V','Schedules and acquires studies. Cannot finalise reports.'),
+ R('radiologist',5,'Radiologist','Dr. Asha Galaal','rad','department','mpi:V rad:A dx:V qual:V','Only a radiologist signature makes a report final. Critical findings are tracked to acknowledgement.',1),
+ R('dx-tech',5,'Diagnostics Technician','Khaliif Roble','rad','department','mpi:V dx:E eq:V','Performs ECG, echo and endoscopy studies on mapped devices.'),
+ R('pharmacist',5,'Pharmacist','Ugaaso Diiriye','rx','branch','mpi:V rx:S inv:E proc:V','Verifies orders and dispenses by batch. Dispense is idempotent.',1),
+ R('storekeeper',5,'Inventory Officer / Storekeeper','Cali Bulxan','rx','branch','rx:V inv:E proc:V','Moves stock between stores. Available quantity never goes negative.'),
+ R('cashier',6,'Cashier','Hamdi Yuusuf','cashier','branch','mpi:V bill:E ins:V','Takes payments and closes the shift. Cannot read clinical histories, even through the API.'),
+ R('billing-officer',6,'Billing Officer','Faysal Qaasim','cashier','branch','mpi:V bill:S ins:E acct:V','Issues and voids invoices. Prices are snapshotted at issue.'),
+ R('claims',6,'Insurance Claims Specialist','Samiira Ducaale','module:ins','hospital','mpi:V bill:V ins:S','Submits claims and tracks denial reasons. No silent claim changes.'),
+ R('accountant',6,'Accountant','Guuleed Axmed','finance','hospital','bill:V acct:E proc:V hr:V bi:V','Posts balanced journals. Corrections use reversing entries.',1),
+ R('finance-director',6,'Finance Director','Hawa Jibriil','finance','hospital','bill:A ins:V acct:A proc:A hr:V bi:V aifin:V ai360:S','Approves refunds above threshold and closes periods. Re-authenticates for every approval.',1),
+ R('finance-approver',6,'Finance Approver','Daahir Lugey','finance','hospital','bill:V acct:S aifin:V ai360:S','Signs the finance section of the monthly Hospital 360 report.',1),
+ R('hr',7,'HR Officer','Filsan Omar','ops','hospital','org:V iam:V hr:A','Contracts, credentials, leave and payroll. Salary access is restricted.',1),
+ R('procurement',7,'Procurement Officer','Sakariye Waqar','ops','hospital','inv:V proc:E eq:V acct:V','Raises purchase orders. 3-way match before any supplier payment.'),
+ R('biomedical',7,'Biomedical Officer','Eng. Jaamac Dirir','ops','hospital','inv:V proc:V eq:A','Calibration and service. Out-of-service devices block bookings.'),
+ R('facilities-cssd',7,'Facilities & CSSD','Barwaaqo Siyaad','ops','branch','sx:V inv:V eq:E','Sterilization batches, maintenance and housekeeping.'),
+ R('dispatch',7,'Ambulance Dispatch','Abdirisaaq Hurre','er','branch','mpi:V er:V amb:E','Dispatches runs and hands over on arrival. Location access is bounded.'),
+ R('quality-officer',8,'Quality Officer','Najma Fiqi','ai','hospital','sec:V qual:A bi:V aidis:V ai360:V','Runs incident review and quality metrics. Incidents are confidential.'),
+ R('ipc',8,'Infection Prevention (IPC)','Rahma Cilmi','ai','hospital','bed:V lab:V qual:E aidis:V','Infection surveillance and isolation recommendations.'),
+ R('analyst',8,'Data Analyst','Abdiwali Geeddi','ai','hospital','bi:E aifin:V aidis:V ai360:V','Builds reports from versioned metric definitions. Small cohorts are suppressed.'),
+ R('clinical-governance',8,'Clinical Governance Lead','Dr. Yusra Mire','ai','hospital','qual:V bi:V aidis:A ai360:V','Validates disease intelligence before anyone reads it.',1),
+ R('clinical-safety-officer',8,'Clinical Safety Officer','Dr. Omar Dhuxul','ai','hospital','studio:V qual:A aidis:S ai360:S','Signs off high-risk workflows and every clinical AI output use.',1),
+ R('clinical-reviewer',8,'Clinical Reviewer','Dr. Kowsar Ibbaan','ai','hospital','bi:V aidis:V ai360:S','Reviews the clinical section of the monthly report.',1),
+ R('security-auditor',9,'Security Auditor','Axmed Gaas','security','tenant','iam:V intg:V sec:A','Reads the protected audit trail and runs access reviews. Cannot change data.',1),
+ R('dpo',9,'Data Protection Officer','Ifraax Bootaan','security','tenant','iam:V sec:E bi:V portal:V','Handles data requests, retention and exceptional-access reports.',1),
+ R('devops',9,'DevOps Engineer','Mukhtaar Jees','security','platform','plat:V intg:E sec:E','Deployments, backups and restores. Never sees raw secrets or patient content.',1),
+ R('integration-engineer',9,'Integration Engineer','Saciid Faahiye','module:intg','tenant','intg:A sec:V','FHIR, HL7 and DICOMweb adapters. Credentials live only in the secrets manager.',1),
+ R('patient',10,'Patient','Faadumo Cali Xasan','portal','own-record','appt:E tele:V portal:E','Sees only their own record, approved results and invoices.'),
+ R('caregiver',10,'Caregiver / Proxy','Hodan Faarax','portal','own-record','appt:E portal:E','Acts for a child or dependant under reviewed proxy rules.'),
+ R('referring-provider',10,'Referring Provider','Dr. Cawil Saalax','portal','own-record','amb:E portal:V','Sees status of the referrals they sent. Nothing else.'),
+];
+const RO=Object.fromEntries(ROLES.map(r=>[r.id,r]));
+const SYSTEM_ACTORS=[['AI agent','Read-only. Reads curated metric snapshots, never raw MongoDB. Cannot write clinical, billing, IAM or ledger data, and cannot grant itself any right.','sparkles'],['API client / integration','Scoped token per branch, signed webhooks with replay protection. Credentials stored only in the secrets manager.','plug']];
+
+const PATIENTS=[
+ {n:'Faadumo Cali Xasan',s:'F',a:34,mrn:'MGD-24-008812'},{n:'Maxamed Yuusuf Guuleed',s:'M',a:58,mrn:'MGD-19-002217'},
+ {n:'Hibaaq Nuur Axmed',s:'F',a:27,mrn:'MGD-25-011430'},{n:'Cabdiraxmaan Faarax',s:'M',a:7,mrn:'MGD-23-006091'},
+ {n:'Sahra Maxamuud Jaamac',s:'F',a:45,mrn:'MGD-21-004376'},{n:'Ismaaciil Aadan Warsame',s:'M',a:63,mrn:'MGD-18-001158'},
+ {n:'Ayaan Jaamac Cilmi',s:'F',a:19,mrn:'MGD-26-013902'},{n:'Khadar Ibraahim Muuse',s:'M',a:41,mrn:'MGD-22-005524'},
+ {n:'Nasra Cumar Daud',s:'F',a:52,mrn:'MGD-20-003391'},{n:'Bile Xasan Gaarane',s:'M',a:29,mrn:'MGD-26-014177'}];
+
+/* ================= STATE ================= */
+const S={role:'platform-owner',view:'home',lang:'en',cur:'USD',locked:false,bed:null};
+try{const s=JSON.parse(localStorage.getItem('hos-state')||'{}');if(s.role&&RO[s.role])S.role=s.role;if(s.lang)S.lang=s.lang;if(s.theme)document.documentElement.dataset.theme=s.theme}catch(e){}
+function save(){try{localStorage.setItem('hos-state',JSON.stringify({role:S.role,lang:S.lang,cur:S.cur,theme:document.documentElement.dataset.theme||''}))}catch(e){}}
+
+/* ================= HELPERS ================= */
+const $=s=>document.querySelector(s);
+const so=()=>S.lang==='so';
+const L=(en,sm)=>so()?sm:en;
+const ic=n=>`<i data-lucide="${n}"></i>`;
+const RATE=571;
+function money(usd,dec=true){if(S.cur==='SOS')return'SOS '+Math.round(usd*RATE).toLocaleString('en-US');return'$'+usd.toLocaleString('en-US',{minimumFractionDigits:dec?2:0,maximumFractionDigits:dec?2:0})}
+const initials=n=>n.replace(/^(Dr\.|Eng\.)\s*/,'').split(' ').slice(0,2).map(w=>w[0]).join('');
+const pill=(t,c='')=>`<span class="pill ${c}">${t}</span>`;
+const lvBadge=l=>l?`<span class="lv lv-${l}" title="${LV[l]}">${l}</span>`:'';
+const modName=m=>so()?m.so:m.n;
+const tierName=t=>{const x=TIERS[t-1];return so()?x[2]:x[1]};
+function tone(s){if(/Released|Final|Paid|Posted|Completed|Closed|Active|Published|Dispensed|Discharged|Verified|Administered|HandedOver|Settled|Enabled|Received|Approved|Signed|Healthy|Passed|Balanced|Matched/.test(s))return'ok';if(/Cancel|Void|Reject|Suspend|NoShow|Reversed|OutOfService|Critical|Failed|Overdue/.test(s))return'crit';if(/Pending|Waiting|Review|Draft|Onboarding|Due|Low|Prelim/.test(s))return'warn';return'info'}
+const kpi=(l,v,d='',dt='')=>`<div class="kpi"><span class="l">${l}</span><span class="v">${v}</span>${d?`<span class="d">${dt?pill(dt.split('|')[0],dt.split('|')[1]):''}${d}</span>`:''}</div>`;
+const card=(t,b,r='',cls='')=>`<section class="card ${cls}"><div class="card-h"><h3>${t}</h3>${r?`<div class="r">${r}</div>`:''}</div>${b}</section>`;
+function table(h,rows,num=[]){return`<div class="tbl-wrap"><table><thead><tr>${h.map((x,i)=>`<th class="${num.includes(i)?'r-num':''}">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${num.includes(i)?'r-num':''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+const li=(icn,t,s,rt='',c='')=>`<div class="li"><span class="ic ${c}">${ic(icn)}</span><div class="bd"><b>${t}</b><span>${s}</span></div>${rt?`<span class="rt">${rt}</span>`:''}</div>`;
+const pnt=p=>`<b>${p.n}</b><span class="s mono">${p.mrn} · ${p.s} · ${p.a}y</span>`;
+function spark(vals,w=120,h=34,col='var(--accent)'){const mn=Math.min(...vals),mx=Math.max(...vals),r=mx-mn||1;const pts=vals.map((v,i)=>[i*(w-6)/(vals.length-1)+3,h-4-(v-mn)/r*(h-10)]);const d=pts.map(p=>p.join(',')).join(' ');const last=pts[pts.length-1];return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polygon points="3,${h} ${d} ${w-3},${h}" fill="${col}" opacity=".12"/><polyline points="${d}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${col}"/></svg>`}
+function barcode(str){let o='';for(const ch of str){const c=ch.charCodeAt(0);o+=`<i style="width:${c%3+1}px"></i><i style="width:1px;background:transparent"></i><i style="width:${(c>>2)%2+1}px"></i><i style="width:${c%2+1}px;background:transparent"></i>`}return`<div class="barcode" aria-hidden="true">${o}</div>`}
+function pipe(states,counts,cur){return`<div class="pipe">${states.map((s,i)=>`<div class="st ${i===cur?'cur':i<cur?'done':''}"><b>${counts?counts[i]:''}</b><span>${s}</span></div>`).join('')}</div>`}
+function toast(msg,icn='check-circle-2'){const t=$('#toast');t.innerHTML=ic(icn)+`<span>${msg}</span>`;t.hidden=false;icons();clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200)}
+function icons(){if(window.lucide)lucide.createIcons({attrs:{'stroke-width':1.75}})}
+function stamp(n){return`${String(Math.floor(n/60)+7).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`}
+
+/* ================= SCOPE RINGS ================= */
+function scopePanel(r){const at=SCOPES.indexOf(r.scope);const cx=56,step=7.2;let rings='';SCOPES.forEach((s,i)=>{const rad=52-i*step;const inn=i>=at;rings+=`<circle cx="${cx}" cy="${cx}" r="${rad}" fill="${inn?'var(--accent)':'var(--surface-2)'}" fill-opacity="${inn?(0.16+(i-at)*0.12):1}" stroke="${i===at?'var(--accent)':'var(--line-2)'}" stroke-width="${i===at?2:1}"/>`});
+ rings+=`<circle cx="${cx}" cy="${cx}" r="${52-6*step-4}" fill="var(--accent)"/>`;
+ return`<div class="scope" aria-label="Access scope"><svg viewBox="0 0 112 112" role="img" aria-label="Scope: ${r.scope}">${rings}</svg><div><span class="eyebrow">${L('Access reach','Heerka gelitaanka')}</span><ol>${SCOPES.map((s,i)=>`<li class="${i>=at?'in':''} ${i===at?'at':''}"><i class="b"></i>${s}${i===at?' ←':''}</li>`).join('')}</ol></div></div>`}
+
+/* ================= SHELL RENDER ================= */
+function role(){return RO[S.role]}
+function renderShell(){
+ const r=role();
+ $('#whoBtn').innerHTML=`<span class="avatar">${initials(r.p)}</span><span class="who-txt"><b>${r.p}</b><span>${r.n}</span></span>${ic('chevrons-up-down')}`;
+ $('#brandSub').textContent=L('Hospital operating platform','Nidaamka hawlgalka isbitaalka');
+ $('#lockedLbl').textContent=L("Show modules this role can't open","Muuji qaybaha uu doorkani furi karin");
+ $('#lockTog').setAttribute('aria-pressed',S.locked);
+ $('#q').placeholder=L('Search patient, MRN, order…','Raadi bukaan, MRN, dalab…');
+ const tenant=r.t===1?`<span class="tenant">${ic('globe')}<b>${L('All tenants','Dhammaan macaamiisha')}</b><small class="faint">· ${L('metadata only','xog-guud kaliya')}</small></span>`:r.t===10?`<span class="tenant">${ic('building-2')}<b>Hiil Medical Group</b><small class="faint">· ${L('Patient portal','Bogga bukaanka')}</small></span>`:`<span class="tenant">${ic('building-2')}<b>Hiil Medical Group</b><small class="faint">› Mogadishu Central · EAT</small></span>`;
+ $('#crumb').innerHTML=tenant;
+ // nav
+ let h=`<a class="${S.view==='home'?'on':''}" data-act="go" data-v="home">${ic('layout-dashboard')}<span class="t">${L('My workspace','Goobta shaqadayda')}</span></a>`;
+ GROUPS.forEach(([g,en,sm])=>{const items=MOD.filter(m=>m.g===g&&(r.acc[m.k]||S.locked));if(!items.length)return;
+  h+=`<div class="nav-group"><span class="eyebrow">${so()?sm:en}</span>${items.map(m=>{const l=r.acc[m.k];return`<a class="${S.view==='m:'+m.k?'on':''} ${l?'':'locked'}" data-act="go" data-v="m:${m.k}">${ic(l?m.ic:'lock')}<span class="t">${modName(m)}</span>${l?lvBadge(l):''}</a>`}).join('')}</div>`});
+ h+=`<div class="nav-group"><span class="eyebrow">${L('Design map','Khariidadda naqshadda')}</span>
+  <a class="${S.view==='roles'?'on':''}" data-act="go" data-v="roles">${ic('contact')}<span class="t">${L('All roles & users','Dhammaan doorarka')}</span><span class="lv lv-V">${ROLES.length}</span></a>
+  <a class="${S.view==='matrix'?'on':''}" data-act="go" data-v="matrix">${ic('grid-3x3')}<span class="t">${L('Access matrix','Shaxda ogolaanshaha')}</span></a>
+  <a class="${S.view==='flows'?'on':''}" data-act="go" data-v="flows">${ic('git-branch')}<span class="t">${L('Workflows & events','Socodka shaqada')}</span></a></div>`;
+ $('#nav').innerHTML=h;
+ // banner
+ const b=$('#banner');
+ b.innerHTML=`${ic('eye')}<span>${L('Design preview','Muuqaal naqshadeed')} · <b>${r.n}</b> · ${tierName(r.t)} · ${L('scope','baaxad')}: <span class="mono">${r.scope}</span>${r.mfa?' · MFA ✓':''}</span><button data-act="switch">${L('Switch role','Beddel doorka')}</button>`;
+ document.querySelectorAll('[data-act="cur"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===S.cur));
+ document.querySelectorAll('[data-act="lang"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===S.lang));
+ document.documentElement.lang=S.lang==='so'?'so':'en';
+}
+
+function header(r,title,sub){
+ const d=L('Tuesday 24 November 2026','Talaado 24 Nofeembar 2026');
+ return`<div class="ph"><div class="ph-main"><span class="eyebrow">${L('Level','Heer')} ${r.t} · ${tierName(r.t)}</span><h1>${title}</h1>
+ <div class="sub"><span>${ic('user-round')}${r.p}</span><span>${ic('badge-check')}${r.n}</span><span>${ic('calendar')}${d}</span>${sub?`<span>${sub}</span>`:''}</div>
+ <p class="muted" style="margin:2px 0 0;max-width:72ch">${r.note}</p></div>${scopePanel(r)}</div>`}
+
+/* ================= WORKSPACE TEMPLATES ================= */
+const TPL={};
+TPL.platform=r=>{
+ const T=[['Hiil Medical Group','Mogadishu','Enterprise','Dedicated DB',3,1284,'Active',99.98],['Badbaado Hospital','Hargeisa','Standard','Dedicated DB',1,342,'Active',99.95],['Daryeel Women & Children','Garowe','Standard','Shared · scoped',2,226,'Active',99.91],['Nabad Specialist Centre','Kismayo','Standard','Shared · scoped',1,198,'Onboarding',null],['Rajo Clinic Network','Baidoa','Enterprise','Dedicated DB',4,134,'Suspended',null]];
+ const users=T.reduce((a,t)=>a+t[5],0),ded=T.filter(t=>t[3]==='Dedicated DB').length;
+ return header(r,L('Platform console','Maamulka madasha'),`${ic('globe')}SaaS control plane`)+
+ `<div class="kpis">${kpi(L('Hospital tenants','Isbitaalada'),T.length,`${T.filter(t=>t[6]==='Active').length} active`,'+1 this month|ok')}${kpi(L('Active users','Isticmaalayaal firfircoon'),users.toLocaleString(),'across all tenants')}${kpi('API p95','312 ms','target < 500 ms','Healthy|ok')}${kpi(L('Dedicated databases','Xog-keyd gaar ah'),`${ded} / ${T.length}`,'preferred for unrelated orgs')}</div>
+ <div class="g2"><div class="stack">${card(L('Hospital tenants','Isbitaalada macaamiisha ah'),table(['Tenant','Plan','Isolation','Branches','Users','Status','Uptime'],T.map(t=>[`<b>${t[0]}</b><span class="s">${t[1]}</span>`,t[2],`<span class="chip">${t[3]}</span>`,t[4],t[5].toLocaleString(),pill(t[6],tone(t[6])),t[7]?t[7]+'%':'<span class="faint">—</span>']),[3,4,6]),`<button class="btn sm pri" data-act="toast" data-v="New tenant wizard opens with tenant-scoped database provisioning">${ic('plus')}New tenant</button>`)}
+ ${card(L('Platform services','Adeegyada madasha'),`<div class="list">${[['server','API (Express modular monolith)','3 replicas · p95 312 ms','Healthy'],['database','MongoDB replica set','Primary + 2 secondaries · PITR on','Healthy'],['layers','Redis / BullMQ workers','Queue lag 1.8 s · 0 dead letters','Healthy'],['hard-drive','Object storage & PACS links','Documents, consent PDFs','Healthy'],['sparkles','AI analytics gateway','Allowlisted models · budget 61% used','Review'],['shield','Immutable audit sink','Hash chain verified 06:00 EAT','Healthy']].map(s=>li(s[0],s[1],s[2],pill(s[3],tone(s[3])))).join('')}</div>`)}</div>
+ <div class="stack">${card(L('Owner guardrails','Ilaalada milkiilaha'),`<div class="card-b stack" style="gap:10px">
+  <div class="note acc">${ic('key-round')}<span><b>Bootstrap locked.</b> Owner created by CLI on 08 Nov 2026 with MFA enrolment. Repeat bootstrap is disabled.</span></div>
+  <div class="note info">${ic('eye-off')}<span><b>No clinical data in the control plane.</b> You see tenant metadata, usage and health. Patient records stay inside each hospital.</span></div>
+  <div class="note warn">${ic('alert-triangle')}<span><b>Owner rights cannot be delegated.</b> No custom role or AI agent can grant itself platform-owner privilege.</span></div></div>`)}
+ ${card(L('Break-glass watch','Gelitaanka degdegga'),`<div class="list">${li('siren','Hiil · Mogadishu Central','ER clinician · reason: unconscious patient, no relationship on file · 45 min scope','Review due','crit')}${li('siren','Badbaado Hospital','ICU team · reason: transfer without referral · expired 03:10','Reviewed','')}</div>`,pill('metadata only','plain'))}
+ </div></div>`};
+
+TPL.admin=r=>{
+ const F=[['opd','Outpatient (OPD)','All branches',1,0],['er','Emergency','Mogadishu Central',1,1],['mat','Maternity & pediatrics','Mogadishu Central, Hodan',1,1],['tele','Telemedicine','Pilot · Hodan branch',0,1],['bb','Blood bank','Mogadishu Central',1,1],['aifin','AI financial intelligence','Finance roles only',1,0],['aidis','AI disease intelligence','Clinical governance',0,1],['portal','Patient portal','All branches',1,0]];
+ return header(r,L('Hospital control centre','Xarunta maamulka isbitaalka'),`${ic('building-2')}Hiil Medical Group · 3 branches`)+
+ `<div class="kpis">${kpi(L('Staff accounts','Akoonnada shaqaalaha'),'412','9 invitations pending')}${kpi(L('Roles','Doorar'),ROLES.length-4,'6 custom · 0 drafts')}${kpi(L('Audit events today','Dhacdooyinka hubinta'),'18,240','hash chain verified','OK|ok')}${kpi(L('Approvals waiting','Ansixinta sugaya'),'3','dual control required','Action|warn')}</div>
+ <div class="g2"><div class="stack">${card(L('Module & feature switchboard','Shidida qaybaha'),`<div class="list">${F.map((f,i)=>`<div class="feat"><span class="ic" style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2)">${ic(M[f[0]].ic)}</span><div class="bd"><b>${f[1]}</b><span>${f[2]}${f[4]?' · <span style="color:var(--warn)">clinical impact — owner approval to change</span>':''}</span></div><button class="tog" data-act="feat" data-v="${f[1]}" aria-pressed="${!!f[3]}" aria-label="Toggle ${f[1]}"></button></div>`).join('')}</div>`,`<span class="faint" style="font-size:12px">Scoped to tenant, branch, department or role</span>`)}
+ ${card(L('Permission matrix','Shaxda ogolaanshaha'),`<div class="card-b"><p class="muted" style="margin:0 0 12px">Every role is a set of grants: <b>action × resource × scope</b>, evaluated on the server. Hidden menus never replace a 403.</p><div class="chips" style="margin-bottom:12px">${Object.entries(LV).map(([k,v])=>`<span class="chip">${lvBadge(k)} ${v}</span>`).join('')}</div><button class="btn" data-act="go" data-v="matrix">${ic('grid-3x3')}Open full matrix · ${ROLES.length} roles × ${MOD.length} modules</button></div>`)}</div>
+ <div class="stack">${card(L('Waiting for your approval','Sugaya ansixintaada'),`<div class="list">${li('shield-alert','MFA reset · Dr. Mahad Nuur','Second approver required (dual control)',`<button class="btn sm" data-act="toast" data-v="MFA reset approved — second approver notified">Approve</button>`,'')}${li('arrow-up-right','Role elevation request','Nurse → Shift lead, Ward 3B · time-bound 30 days',`<button class="btn sm" data-act="toast" data-v="Elevation granted until 24 Dec 2026 · audited">Review</button>`)}${li('file-pen-line','Form “Antenatal intake v3”','Tested → Approved → Publish · migration reversible',`<button class="btn sm" data-act="toast" data-v="Form published · v2 submissions still readable">Publish</button>`)}</div>`)}
+ ${card(L('Live audit stream','Socodka hubinta'),`<div class="list">${[['log-in','Hamdi Yuusuf signed in','Cashier · MFA not required · device known','08:02'],['ban','403 · cashier → /patients/…/timeline','PERMISSION_DENIED returned · menu was hidden','08:05'],['pen-line','Dr. Hodan Warsame signed note','Encounter OPD-2611-0412 · v2 amendment','08:11'],['refresh-ccw','Role matrix v14 published','Sessions refreshed in 41 s','08:20']].map(a=>li(a[0],a[1],a[2],a[3])).join('')}</div>`,`<button class="btn sm" data-act="go" data-v="m:sec">Explorer</button>`)}</div></div>`};
+
+TPL.reception=r=>{
+ const Q=[['A-031',0,'General OPD','CheckedIn',22],['A-032',1,'Cardiology','Waiting',18],['B-014',3,'Pediatrics','Waiting',15],['A-033',4,'General OPD','With clinician',9],['C-007',6,'Antenatal','Confirmed',0],['A-034',7,'Dental','Waiting',4]];
+ return header(r,L('Front desk','Soo-dhoweynta'),`${ic('map-pin')}Mogadishu Central · Main reception`)+
+ `<div class="kpis">${kpi(L('Checked in today','Diiwaangashan maanta'),'46','since 07:00')}${kpi(L('Waiting now','Sugaya hadda'),'12','avg 18 min','Busy|warn')}${kpi(L('No-shows','Ballan-ka-maqnaansho'),'3','of 58 booked')}${kpi(L('New registrations','Diiwaan cusub'),'9','2 provisional')}</div>
+ <div class="g2"><div class="stack">${card(L('Queue','Safka'),table(['Ticket','Patient','Clinic','Status','Wait'],Q.map(q=>[`<span class="mono"><b>${q[0]}</b></span>`,pnt(PATIENTS[q[1]]),q[2],pill(q[3],tone(q[3])),q[4]?q[4]+' min':'—']),[4]),`<button class="btn sm pri" data-act="toast" data-v="Next ticket A-032 called to Room 4">${ic('megaphone')}Call next</button>`)}
+ ${card(L("Today's clinics","Rugaha maanta"),`<div class="card-b stack" style="gap:12px">${[['Dr. Hodan Warsame','General OPD',22,24],['Dr. Anwar Bile','Pediatrics',14,20],['Dr. Ladan Ismail','Antenatal',11,16],['Dr. Idil Faarax','Telemedicine',6,12]].map(c=>`<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span><b>${c[0]}</b> <span class="faint">· ${c[1]}</span></span><span class="num muted">${c[2]}/${c[3]}</span></div><div class="bar"><i style="width:${c[2]/c[3]*100}%"></i></div></div>`).join('')}</div>`)}</div>
+ <div class="stack">${card(L('Register patient','Diiwaangeli bukaan'),`<div class="card-b stack" style="gap:10px">
+  ${[['Full name','Faadumo Cali Hassan'],['Date of birth','14/03/1992'],['Phone','+252 61 ··· ·· 47'],['Branch MRN','assigned on save']].map(f=>`<label style="display:grid;gap:4px;font-size:12px;color:var(--ink-2)">${f[0]}<input value="${f[1]}" style="height:36px;border:1px solid var(--line-2);border-radius:8px;padding:0 10px;background:var(--surface-2)" ${f[0]==='Branch MRN'?'disabled':''}></label>`).join('')}
+  <div class="note warn">${ic('users')}<span><b>Possible duplicate · 92% match.</b> Faadumo Cali Xasan · <span class="mono">MGD-24-008812</span> · same DOB. A merge needs supervisor approval and keeps both identifiers.</span></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-act="toast" data-v="Opened existing record MGD-24-008812">Use existing record</button><button class="btn" data-act="toast" data-v="Merge request sent for approval">Request merge</button></div></div>`)}
+ <div class="note info">${ic('lock')}<span>${L('Reception sees demographics and visit status only. Clinical notes, results and diagnoses are not available to this role.','Soo-dhoweyntu waxay aragtaa xogta guud iyo xaaladda booqashada kaliya.')}</span></div></div></div>`};
+
+TPL.clinical=r=>{
+ const p=PATIENTS[0];
+ return header(r,L('Patient chart','Kaarka bukaanka'),`${ic('stethoscope')}OPD · Room 4`)+
+ `<div class="band"><div class="avatar" style="width:52px;height:52px;font-size:17px">${initials(p.n)}</div><div style="min-width:0"><h2>${p.n}</h2><div class="meta"><span>Female · 34y · DOB 14 Mar 1992</span><span class="mono">${p.mrn}</span><span>Blood group O+</span><span>Encounter <span class="mono">OPD-2611-0412</span> · ${pill('InProgress','info')}</span></div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span class="allergy">${ic('alert-octagon')}Penicillin · anaphylaxis</span><span class="pill warn plain">Pregnancy: not pregnant (checked 24 Nov)</span></div></div><div class="barcode-wrap">${barcode(p.mrn)}<span class="mono faint" style="font-size:11px">${p.mrn}</span></div></div>
+ <div class="kpis">${[['Blood pressure','148/92','mmHg',[132,138,141,139,145,148],'var(--warn)'],['Heart rate','96','bpm',[82,88,90,94,92,96],'var(--accent)'],['SpO₂','97','%',[98,97,98,97,96,97],'var(--accent)'],['Temperature','38.6','°C',[37.1,37.4,38.2,38.9,38.8,38.6],'var(--crit)']].map(v=>`<div class="kpi"><span class="l">${v[0]}</span><div style="display:flex;align-items:end;justify-content:space-between;gap:8px"><span class="v">${v[1]}<small style="font-size:13px;color:var(--ink-3);font-family:var(--f-body)"> ${v[2]}</small></span>${spark(v[3],92,32,v[4])}</div><span class="d faint">Nurse Deeqa Ali · 08:14 · manual</span></div>`).join('')}</div>
+ <div class="g2"><div class="stack">${card(L('Problem list','Liiska dhibaatooyinka'),table(['ICD-11','Condition','Certainty','Recorded'],[['<span class="mono">1F40</span>','Plasmodium falciparum malaria',pill('confirmed','ok'),'24 Nov · Dr. Warsame'],['<span class="mono">BA00</span>','Essential hypertension',pill('confirmed','ok'),'02 Jun 2025'],['<span class="mono">5A11</span>','Type 2 diabetes mellitus',pill('suspected','warn'),'24 Nov · awaiting HbA1c']]),`<button class="btn sm" data-act="toast" data-v="ICD-11 picker opened · catalog 2026-01">${ic('plus')}Add diagnosis</button>`)}
+ ${card(L('Clinical note','Qoraalka caafimaadka'),`<div class="card-b"><div class="note info" style="margin-bottom:12px">${ic('sparkles')}<span><b>AI draft.</b> Written from today's structured observations. It is not part of the record until you review, edit and sign it.</span></div>
+  <p class="ai-p"><b>S:</b> 3 days of fever with rigors, headache and reduced appetite. No travel outside Banadir. Taking no regular medication besides amlodipine.</p>
+  <p class="ai-p"><b>O:</b> T 38.6 °C, HR 96, BP 148/92, SpO₂ 97% on air. Malaria RDT positive (released 08:40). Mild pallor, no jaundice.</p>
+  <p class="ai-p"><b>A/P:</b> Uncomplicated falciparum malaria. Treat per hospital protocol, review HbA1c, follow-up in 3 days.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="sign">${ic('pen-line')}Review & sign</button><button class="btn" data-act="toast" data-v="Draft saved · v1 · not signed">Save draft</button><span class="faint" style="font-size:12px;align-self:center">Signing asks for re-authentication</span></div><div id="signBox"></div></div>`)}</div>
+ <div class="stack">${card(L('Orders & results','Dalabyada & natiijooyinka'),`<div class="list">${li('flask-conical','Malaria RDT','Positive · P. falciparum · verified Dr. Xuseen',pill('Released','ok'))}${li('flask-conical','Full blood count','Hb 10.9 g/dL · verified, awaiting release',pill('Verified','ok'))}${li('flask-conical','HbA1c','Sample collected 08:22 · ACC-2611-00418',pill('Processing','info'))}${li('scan-line','Chest X-ray PA','Room X-2 · 10:30',pill('Scheduled','info'))}</div>`)}
+ ${card(L('Medications','Daawooyinka'),`<div class="list">${li('pill','Artemether-lumefantrine','80/480 mg · per protocol · 3 days',pill('Draft','warn'))}${li('pill','Amlodipine 5 mg','Once daily · long-term',pill('Active','ok'))}</div><div class="card-b"><div class="note crit" style="margin-top:8px">${ic('shield-alert')}<span>Penicillin-class orders are blocked for this patient. Override needs a reason and is audited.</span></div></div>`)}</div></div>`};
+
+TPL.ward=r=>{
+ const map='OOIOARCOOOOAOROOOCOOOAOO'.split('');const occ=map.filter(x=>x==='O'||x==='I').length;
+ const beds=map.map((s,i)=>({code:'3B-'+String(i+1).padStart(2,'0'),s,p:(s==='O'||s==='I')?PATIENTS[i%PATIENTS.length]:s==='R'?PATIENTS[(i+3)%PATIENTS.length]:null}));
+ const sel=S.bed!=null?beds[S.bed]:null;const lab={O:'Occupied',A:'Available',R:'Reserved',C:'Cleaning',I:'Isolation'};
+ return header(r,L('Ward 3B · Medical','Qolka 3B · Caafimaad'),`${ic('bed-double')}24 staffed beds`)+
+ `<div class="kpis">${kpi(L('Occupancy','Buuxsanaanta'),Math.round(occ/beds.length*100)+'%',`${occ} of ${beds.length} staffed beds`)}${kpi(L('Admissions today','Dhigis maanta'),'7','2 from Emergency')}${kpi(L('Planned discharges','Ka-bixitaan'),'5','3 summaries signed')}${kpi(L('Vitals due','Calaamado la sugayo'),'6','2 overdue','Overdue|crit')}</div>
+ <div class="g2"><div class="stack">${card(L('Bed board','Shaxda sariiraha'),`<div class="card-b"><div class="ward">${beds.map((b,i)=>`<button class="bed ${b.s} ${S.bed===i?'sel':''}" data-act="bed" data-v="${i}"><b>${b.code}</b>${b.p?`<span class="nm">${b.p.n.split(' ').slice(0,2).join(' ')}</span>`:''}<span class="stt">${lab[b.s]}</span></button>`).join('')}</div>
+  <div class="legend" style="margin-top:12px">${[['O','var(--accent-soft)'],['A','var(--surface)'],['R','var(--info-soft)'],['C','var(--warn-soft)'],['I','var(--crit-soft)']].map(x=>`<span><i style="background:${x[1]}"></i>${lab[x[0]]}</span>`).join('')}</div></div>`,`<span class="faint" style="font-size:12px">One active occupant per bed · assignments are atomic</span>`)}</div>
+ <div class="stack">${card(sel?`Bed ${sel.code}`:L('Select a bed','Dooro sariir'),sel?`<div class="card-b stack" style="gap:10px">${pill(lab[sel.s],sel.s==='O'?'acc':tone(lab[sel.s]==='Isolation'?'Critical':lab[sel.s]==='Cleaning'?'Pending':'x'))}${sel.p?`<div>${pnt(sel.p)}</div><div class="muted" style="font-size:13px">Admitted 21 Nov · Dr. Mahad Nuur · LOS 3 days</div>`:`<div class="muted" style="font-size:13px">${sel.s==='C'?'Housekeeping started 07:50 · est. ready 08:40':'Ready for assignment. Reservations hold for 30 minutes.'}</div>`}
+  <div style="display:flex;gap:8px;flex-wrap:wrap">${sel.s==='A'?`<button class="btn pri" data-act="toast" data-v="Bed ${sel.code} reserved · Idempotency-Key sent · BED_ALREADY_OCCUPIED prevented">Reserve bed</button>`:sel.p?`<button class="btn" data-act="toast" data-v="Transfer request opened for ${sel.code}">Transfer</button><button class="btn" data-act="toast" data-v="Discharge checklist opened">Discharge</button>`:`<button class="btn" data-act="toast" data-v="Marked clean · bed available">Mark clean</button>`}</div></div>`:`<div class="card-b muted">Tap any bed on the board to see the occupant, reserve, transfer or discharge.</div>`)}
+ ${card(L('Vitals due','Calaamadaha la sugayo'),`<div class="list">${li('thermometer','3B-03 · Hibaaq Nuur Axmed','Isolation · 4-hourly obs','Overdue 25 min','')}${li('heart-pulse','3B-09 · Faadumo Cali Xasan','Post-transfusion check','Overdue 10 min')}${li('activity','3B-14 · Ismaaciil Aadan Warsame','NEWS2 5 last round','Due 08:45')}${li('activity','3B-17 · Khadar Ibraahim Muuse','Routine','Due 09:00')}</div>`)}
+ ${card(L('Handover','Wareejinta'),`<div class="card-b muted" style="font-size:13px">Night → Day handover signed by <b style="color:var(--ink)">Sagal Abdi</b> at 07:05. 2 escalations, 1 fall-risk alert, 0 open incidents.</div>`)}</div></div>`};
+
+TPL.er=r=>{
+ const C=[[1,'#1',[[5,'Unresponsive · RTA','4 min','Resus 1']]],[2,'#2',[[1,'Chest pain, diaphoretic','11 min','Bay 2'],[8,'Severe asthma','16 min','Bay 3'],[3,'Febrile convulsion','19 min','Peds 1']]],[3,'#3',[[0,'Abdominal pain','32 min','Chair 4'],[6,'Fall, wrist deformity','41 min','Chair 2'],[9,'Fever 4 days','48 min','Chair 6'],[2,'Vomiting, 24 wk pregnant','52 min','Obs 1'],[4,'Headache, BP 182/110','57 min','Chair 1'],[7,'Laceration, hand','1 h 06','Minor 2']]],[4,'#4',[[1,'Dysuria','1 h 12','Wait'],[5,'Ankle sprain','1 h 20','Wait'],[3,'Ear pain','1 h 31','Wait'],[0,'Rash','1 h 38','Wait']]],[5,'#5',[[8,'Prescription refill','1 h 44','Wait'],[6,'Dressing change','2 h 02','Wait']]]];
+ const n=C.reduce((a,c)=>a+c[2].length,0);
+ return header(r,L('Emergency tracking board','Shaxda gurmadka'),`${ic('siren')}ED · Mogadishu Central`)+
+ `<div class="kpis">${kpi(L('In department','Qaybta dhexdeeda'),n,'capacity 28')}${kpi('Door-to-doctor','14 min','median today','Target ≤ 15|ok')}${kpi(L('Awaiting bed','Sugaya sariir'),'4','2 reserved on 3B')}${kpi(L('Ambulances inbound','Ambalaas imanaya'),'2','ETA 6 and 14 min','Inbound|warn')}</div>
+ ${card(L('Triage board · ESI','Shaxda kala-saarka'),`<div class="card-b"><div class="board">${C.map(c=>`<div class="col"><div class="col-h"><span class="sq" style="background:var(--esi${c[0]})"></span>ESI ${c[0]}<span class="c">${c[2].length}</span></div>${c[2].map(x=>`<div class="pc" style="--c:var(--esi${c[0]})"><b>${PATIENTS[x[0]].n}</b>${x[1]}<div class="m"><span>${x[3]}</span><span class="mono">${x[2]}</span></div></div>`).join('')}</div>`).join('')}</div></div>`,`<span class="faint" style="font-size:12px">Triage rules approved by hospital · every override audited</span>`)}
+ <div class="g2e">${card(L('Inbound ambulances','Ambalaasyada imanaya'),`<div class="list">${li('ambulance','AMB-04 · RTA, 2 casualties','Dispatched 08:02 · Abdirisaaq Hurre','ETA 6 min','')}${li('ambulance','AMB-07 · Referral from Kaah Clinic','Suspected appendicitis · referral REF-2611-088','ETA 14 min')}</div>`)}
+ ${card(L('Admission requests','Codsiyada dhigista'),`<div class="list">${li('door-open','Maxamed Yuusuf Guuleed → Cardiology','Bed reserved CCU-02 · handover pending',pill('Reserved','info'))}${li('door-open','Hibaaq Nuur Axmed → Ward 3B','Isolation cohort required',pill('Requested','warn'))}</div>`)}</div>`};
+
+TPL.theatre=r=>{
+ const pos=(a,b)=>`left:${(a-8)/10*100}%;width:${(b-a)/10*100}%`;
+ const rows=[['OT-1',[[8,10.5,'Laparoscopic cholecystectomy','Completed · Dr. Samatar','done'],[11,13,'Appendicectomy','InProcedure · started 11:04','live'],[14.5,16,'Inguinal hernia repair','Prepared · consent ✓','plan']]],['OT-2',[[8.5,11.5,'Elective caesarean section','Completed · Dr. Ismail','done'],[13,15,'ORIF tibia','Planned · checklist open','plan']]],['OT-3',[[8,18,'Out of service — anesthesia machine calibration','Bookings blocked by Equipment','oos']]]];
+ return header(r,L('Operating theatre','Qolka qalliinka'),`${ic('scissors')}3 theatres · today`)+
+ `<div class="kpis">${kpi(L('Cases today','Kiisaska maanta'),'5','2 completed')}${kpi(L('In procedure','Qalliin socda'),'1','OT-1 · 0 h 46')}${kpi(L('Theatre utilisation','Isticmaalka'),'71%','OT-3 unavailable')}${kpi(L('Checklists complete','Liisaska dhammaystiran'),'4 / 5','1 time-out pending','Pending|warn')}</div>
+ ${card(L('Theatre schedule','Jadwalka qalliinka'),`<div class="card-b tbl-wrap"><div class="tl"><span></span><div class="tl-hours">${[8,10,12,14,16,18].map(h=>`<span style="left:${(h-8)*10}%">${String(h).padStart(2,'0')}:00</span>`).join('')}</div>${rows.map(rw=>`<span class="tl-lab">${rw[0]}</span><div class="tl-row">${rw[1].map(b=>`<div class="tl-blk blk-${b[4]}" style="${pos(b[0],b[1])}"><b>${b[2]}</b>${b[3]}</div>`).join('')}</div>`).join('')}</div></div>`)}
+ <div class="g2e">${card(L('Surgical safety checklist · OT-1','Liiska badbaadada'),`<div class="card-b"><div class="eyebrow" style="margin-bottom:6px">Appendicectomy · ${PATIENTS[7].n} · <span class="mono">${PATIENTS[7].mrn}</span></div>${[['Sign in','Identity, site, procedure and consent confirmed',1],['Sign in','Anesthesia safety check completed',1],['Time out','Team introduced by name and role',1],['Time out','Antibiotic prophylaxis within 60 min',1],['Sign out','Instrument, swab and needle counts correct',0],['Sign out','Specimen labelled and sent to lab',0]].map((c,i)=>`<label class="check"><input type="checkbox" ${c[2]?'checked':''} data-act="chk"><span><span class="eyebrow" style="display:block">${c[0]}</span>${c[1]}</span></label>`).join('')}</div>`)}
+ ${card(L('Consent & readiness','Oggolaanshaha & diyaargarowga'),`<div class="list">${li('file-signature','Consent · Inguinal hernia repair','Signed 23 Nov by patient · witness Zamzam Hirsi',pill('Signed','ok'))}${li('clipboard-list','Pre-anesthesia assessment · ORIF tibia','ASA II · Dr. Leyla Osman',pill('Pending','warn'))}${li('package','Instrument set GEN-04','Sterilised batch CSSD-2611-031 · released 06:40',pill('Released','ok'))}${li('wrench','OT-3 anesthesia machine','Calibration job EQ-7781 · back 25 Nov',pill('OutOfService','crit'))}</div>`)}</div>`};
+
+TPL.lab=r=>{
+ const W=[['ACC-2611-00418',0,'HbA1c','Routine','Processing'],['ACC-2611-00421',1,'Troponin I','STAT','Processing'],['ACC-2611-00409',4,'Potassium','Urgent','Verified'],['ACC-2611-00425',3,'Full blood count','STAT','Collected'],['ACC-2611-00402',5,'Creatinine','Routine','Released'],['ACC-2611-00427',9,'Blood culture','Urgent','Collected']];
+ return header(r,L('Laboratory','Shaybaarka'),`${ic('flask-conical')}Core lab · LIS`)+
+ card(L('Sample pipeline today','Socodka muunadaha'),`<div class="card-b">${pipe(M.lab.st,[38,22,17,9,112],2)}</div>`,`<span class="faint" style="font-size:12px">Median turnaround 54 min · p95 2 h 10</span>`)+
+ `<div class="g2"><div class="stack">${card(L('Worklist','Liiska shaqada'),table(['Accession','Patient','Test','Priority','Status',''],W.map(w=>[`<span class="mono">${w[0]}</span>`,pnt(PATIENTS[w[1]]),w[2],w[3]==='STAT'?pill('STAT','crit'):w[3]==='Urgent'?pill('Urgent','warn'):pill('Routine','plain'),pill(w[4],tone(w[4])),w[4]==='Verified'?(r.acc.lab==='A'?`<button class="btn sm pri" data-act="toast" data-v="Result released · clinician notified">Release</button>`:`<span class="faint" style="font-size:12px">Pathologist releases</span>`):''])))}</div>
+ <div class="stack">${card(L('Critical values','Qiimaha khatarta ah'),`<div class="card-b stack" style="gap:10px"><div class="note crit">${ic('siren')}<span><b>Potassium 6.8 mmol/L</b> · ${PATIENTS[4].n}<br>Called Dr. Mahad Nuur at 08:31 · acknowledgement pending <b class="num">6 min</b></span></div><button class="btn danger" data-act="ack">${ic('phone-call')}Record acknowledgement</button></div>`)}
+ ${card(L('Quality control','Xakamaynta tayada'),`<div class="list">${li('check-circle-2','Chemistry analyser · Westgard','Level 1 & 2 within limits · 06:30',pill('Passed','ok'))}${li('alert-triangle','Haematology · Level 2','1-2s warning · rerun scheduled',pill('Review','warn'))}</div>`)}</div></div>`};
+
+TPL.rad=r=>{
+ const W=[['RAD-2611-0193','1.2.840.113619.2.55.3.604688.11','X-ray',0,'Chest PA','Scheduled'],['RAD-2611-0188','1.2.840.113619.2.55.3.604688.07','CT',5,'CT head non-contrast','Interpreted'],['RAD-2611-0185','1.2.840.113619.2.55.3.604687.92','US',2,'Obstetric ultrasound','Final'],['RAD-2611-0190','1.2.840.113619.2.55.3.604688.02','MRI',8,'MRI lumbar spine','Acquired'],['RAD-2611-0194','—','X-ray',6,'Wrist AP/lateral','Ordered']];
+ return header(r,L('Radiology worklist','Liiska raajada'),`${ic('scan-line')}RIS · PACS linked`)+
+ `<div class="kpis">${kpi(L('Studies today','Baaritaannada maanta'),'64','X-ray 41 · CT 9 · US 11 · MRI 3')}${kpi(L('Awaiting report','Sugaya warbixin'),'7','oldest 2 h 05','Backlog|warn')}${kpi(L('Report turnaround','Waqtiga warbixinta'),'1 h 12','median · p95 3 h 40')}${kpi(L('Critical findings','Natiijooyin khatar ah'),'1','acknowledged','Closed|ok')}</div>
+ <div class="g2"><div class="stack">${card(L('Worklist','Liiska shaqada'),table(['Accession / StudyInstanceUID','Modality','Patient','Exam','Status'],W.map(w=>[`<span class="mono">${w[0]}</span><span class="s mono">${w[1]}</span>`,`<span class="chip">${w[2]}</span>`,pnt(PATIENTS[w[3]]),w[4],pill(w[5],tone(w[5]))])),`<button class="btn sm" data-act="toast" data-v="Short-lived viewer link issued · expires in 15 min">${ic('external-link')}Open viewer</button>`)}</div>
+ <div class="stack">${card(L('Report · CT head','Warbixinta'),`<div class="card-b"><div class="eyebrow" style="margin-bottom:6px">${PATIENTS[5].n} · RAD-2611-0188</div><p class="ai-p"><b>Findings:</b> No acute intracranial haemorrhage. Chronic small-vessel changes. No mass effect or midline shift.</p><p class="ai-p"><b>Impression:</b> No acute abnormality.</p>${r.acc.rad==='A'?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-act="toast" data-v="Report signed as Final · Dr. Asha Galaal · amendments append only">${ic('pen-line')}Sign as final</button><button class="btn" data-act="toast" data-v="Saved as preliminary">Preliminary</button></div>`:`<div class="note info">${ic('lock')}<span>Only a radiologist's signature makes this report final.</span></div>`}</div>`)}
+ ${card(L('Equipment','Qalabka'),`<div class="list">${li('scan','CT-1','Available · QA passed 06:00',pill('Available','ok'))}${li('scan','CT-2','Tube fault · bookings blocked',pill('OutOfService','crit'))}${li('scan','MRI-1','Service due 02 Dec',pill('Due','warn'))}</div>`)}</div></div>`};
+
+TPL.rx=r=>{
+ const D=[[0,'Artemether-lumefantrine 80/480 mg','AL-2409','2027-03',214,'Verified'],[1,'Atorvastatin 40 mg','AT-2311','2026-12',48,'Verified'],[3,'Paracetamol syrup 120 mg/5 mL','PS-2502','2027-08',96,'Signed'],[5,'Insulin glargine 100 U/mL','IG-2406','2026-12',7,'Verified']];
+ return header(r,L('Pharmacy','Farmashiyaha'),`${ic('pill')}Main dispensary`)+
+ `<div class="kpis">${kpi(L('To dispense','La bixinayo'),'18','6 STAT')}${kpi(L('Dispensed today','La bixiyay maanta'),'142','0 duplicates')}${kpi(L('Low stock','Kayd yar'),'5','items below reorder','Low|warn')}${kpi(L('Expiring ≤ 90 days','Dhacaya 90 maalmood'),'11','lots · '+money(3420.5))}</div>
+ <div class="g2"><div class="stack">${card(L('Dispense queue','Safka bixinta'),table(['Patient','Medication','Batch · expiry','Stock','Status',''],D.map((d,i)=>[pnt(PATIENTS[d[0]]),d[1],`<span class="mono">${d[2]}</span><span class="s">exp ${d[3]}</span>`,d[4]<10?`<span style="color:var(--warn);font-weight:600">${d[4]}</span>`:d[4],pill(d[5],tone(d[5])),d[5]==='Verified'&&r.acc.rx==='S'?`<button class="btn sm pri" data-act="toast" data-v="Dispensed · batch ${d[2]} · stock decremented in one transaction">Dispense</button>`:'']),[3]))}</div>
+ <div class="stack">${card(L('Stock alerts','Digniinaha kaydka'),`<div class="list">${li('package','Insulin glargine 100 U/mL','7 pens · reorder at 20 · PO-2611-044 raised',pill('Low','warn'))}${li('package','Amoxicillin 500 mg','0 in OPD store · 1,200 in main store',pill('Transfer','info'))}${li('calendar-x','Oxytocin 10 IU · lot OX-2402','Expires 31 Dec 2026 · 140 ampoules',pill('Due','warn'))}</div>`)}
+ <div class="note info">${ic('shield-check')}<span>Each dispense sends an Idempotency-Key. A retried request returns the same receipt and never takes stock twice.</span></div></div></div>`};
+
+TPL.cashier=r=>{
+ const I=[['INV-2611-03318',0,'OPD consultation + labs',42,0,'Issued'],['INV-2611-03315',1,'Cardiology review, ECG',85,40,'PartiallyPaid'],['INV-2611-03309',3,'Pediatric OPD',18,18,'Paid'],['INV-2611-03320',8,'MRI lumbar spine',260,0,'Issued']];
+ const ch=[['Cash · USD',1240],['Cash · SOS',386.4],['Card (PSP hosted)',612],['Mobile money',1975.25]];
+ const tot=ch.reduce((a,c)=>a+c[1],0);
+ return header(r,L('Cashier desk','Miiska khasnajiga'),`${ic('clock')}Shift opened 07:00 · drawer float ${money(200)}`)+
+ `<div class="kpis">${kpi(L('Collected this shift','La ururiyay'),money(tot),`${ch.length} channels`)}${kpi(L('Receipts issued','Rasiidyada'),'57','0 voided')}${kpi(L('Open invoices','Biilal furan'),'23',money(4180)+' outstanding')}${kpi(L('Refund requests','Codsiyada celinta'),'2','above threshold → director','Approval|warn')}</div>
+ <div class="g2"><div class="stack">${card(L('Invoices to collect','Biilasha la qaadayo'),table(['Invoice','Patient','Items','Total','Paid','Status',''],I.map(x=>[`<span class="mono">${x[0]}</span>`,`<b>${PATIENTS[x[1]].n}</b><span class="s mono">${PATIENTS[x[1]].mrn}</span>`,x[2],money(x[3]),money(x[4]),pill(x[5],tone(x[5]==='PartiallyPaid'?'Pending':x[5])),x[5]!=='Paid'?`<button class="btn sm pri" data-act="toast" data-v="Payment ${x[0]} captured · receipt printed · allocation posted">Take payment</button>`:'']),[3,4]))}
+ ${card(L('Shift reconciliation','Is-waafajinta'),`<div class="card-b stack" style="gap:12px">${ch.map(c=>`<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>${c[0]}</span><b class="num">${money(c[1])}</b></div><div class="bar"><i style="width:${c[1]/tot*100}%"></i></div></div>`).join('')}<div class="note warn">${ic('scale')}<span>Counted cash differs from system by <b>${money(2)}</b>. Close the shift with a discrepancy note for supervisor approval.</span></div><button class="btn" data-act="toast" data-v="Shift close sent for approval">Close shift</button></div>`)}</div>
+ <div class="stack">${card(L('Patient record','Kaarka bukaanka'),`<div class="card-b denied" style="padding:28px 12px"><span class="code">403 · PERMISSION_DENIED</span><h3 style="font-size:18px">${L('Clinical history is not available','Taariikhda caafimaadka lama heli karo')}</h3><p style="font-size:13px">Cashiers see demographics and charges only. The API refuses clinical reads even when called directly.</p></div>`)}
+ <div class="note info">${ic('credit-card')}<span>Cards are captured on the payment provider's hosted page. HospitalOS never stores card numbers or CVV.</span></div></div></div>`};
+
+TPL.finance=r=>{
+ const mo=['May','Jun','Jul','Aug','Sep','Oct'],rev=[162.4,168.9,171.2,176.0,180.3,185.4],exp=[112.0,114.6,117.9,118.3,119.8,121.2];
+ const W=560,H=200,pl=44,pb=26,pt=10,sc=v=>H-pb-(v/200)*(H-pb-pt);const bw=(W-pl-10)/mo.length;
+ let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Revenue and expenses, May to October 2026">`;
+ [0,50,100,150,200].forEach(t=>{svg+=`<line x1="${pl}" x2="${W-6}" y1="${sc(t)}" y2="${sc(t)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-8}" y="${sc(t)+4}" text-anchor="end" font-size="10.5" fill="var(--ink-3)" font-family="IBM Plex Mono, monospace">${t}k</text>`});
+ mo.forEach((m,i)=>{const x=pl+i*bw+bw*.18,w=bw*.3;svg+=`<rect x="${x}" y="${sc(rev[i])}" width="${w}" height="${H-pb-sc(rev[i])}" rx="3" fill="var(--accent)"/><rect x="${x+w+3}" y="${sc(exp[i])}" width="${w}" height="${H-pb-sc(exp[i])}" rx="3" fill="var(--line-2)"/><text x="${x+w}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${m}</text>`});
+ svg+=`<text x="${pl+5*bw+bw*.18+bw*.15}" y="${sc(185.4)-6}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">185.4k</text></svg>`;
+ return header(r,L('Finance · October 2026','Maaliyadda · Oktoobar 2026'),`${ic('landmark')}Period open · closes 05 Nov`)+
+ `<div class="kpis">${kpi(L('Gross billed','Wadarta biilasha'),money(196280,false),'issued invoice lines')}${kpi(L('Recognized revenue','Dakhliga la aqoonsaday'),money(185400,false),'posted revenue accounts','+2.8%|ok')}${kpi(L('Cash collected','Lacagta la ururiyay'),money(171930,false),'settled − refunds')}${kpi(L('Operating result','Natiijada hawlgalka'),money(64200,false),'revenue − expenses','+6.0%|ok')}</div>
+ <div class="note info">${ic('info')}<span>Billed, recognized and collected are three different numbers. Cash collected is never reported as revenue. <span class="mono faint">revenueMinor 18540000 · metricVersion finance-v2</span></span></div>
+ <div class="g2"><div class="stack">${card(L('Revenue vs operating expenses','Dakhliga iyo kharashka'),`<div class="card-b">${svg}<div class="legend" style="margin-top:6px"><span><i style="background:var(--accent)"></i>Recognized revenue</span><span><i style="background:var(--line-2)"></i>Operating expenses</span><span class="faint">USD thousands</span></div></div>`)}
+ ${card(L('Journal entries','Diiwaanka xisaabaadka'),table(['Entry','Source','Debit','Credit','State'],[['<span class="mono">JE-2610-1182</span>','Payment settlement · INV-2610-02987',money(85),money(85),pill('Posted','ok')],['<span class="mono">JE-2610-1183</span>','Refund REF-0041 · reversal of JE-2610-0950',money(40),money(40),pill('Reversed','crit')],['<span class="mono">JE-2610-1190</span>','Payroll run PR-2610',money(48300,false),money(48300,false),pill('Posted','ok')],['<span class="mono">JE-2610-1194</span>','Supplier invoice SI-7710 · 3-way matched',money(6120,false),money(6120,false),pill('Approved','info')]],[2,3]),`<span class="pill ok">Balanced</span>`)}</div>
+ <div class="stack">${card(L('Month-end close','Xiritaanka bisha'),`<div class="card-b">${[['Bank & mobile-money reconciliation',1],['Cashier shifts approved (31/31)',1],['Receivables ageing reviewed',1],['Accruals posted',0],['Period lock · Oct 2026',0]].map(c=>`<label class="check"><input type="checkbox" ${c[1]?'checked':''} data-act="chk"><span>${c[0]}</span></label>`).join('')}</div>`)}
+ ${card(L('Refunds above threshold','Celin ka badan xadka'),`<div class="list">${li('undo-2','REF-0044 · '+money(320),'Duplicate MRI charge · requested by Faysal Qaasim',r.acc.bill==='A'?`<button class="btn sm" data-act="reauth">Approve</button>`:pill('Pending','warn'))}${li('undo-2','REF-0045 · '+money(150),'Cancelled surgery deposit',pill('Pending','warn'))}</div><div class="card-b" id="reauthBox"></div>`)}</div></div>`};
+
+TPL.ops=r=>header(r,L('Operations','Hawlgallada'),`${ic('briefcase')}Hiil Medical Group`)+
+ `<div class="kpis">${kpi(L('Staff on shift','Shaqaalaha shaqada ku jira'),'186','of 412 · coverage 96%')}${kpi(L('Credentials expiring','Shahaadooyin dhacaya'),'7','within 30 days','Due|warn')}${kpi(L('Purchase orders open','Dalabyada iibka'),'14',money(38250,false)+' committed')}${kpi(L('Equipment out of service','Qalab shaqayn waayay'),'2','CT-2 · OT-3 anaesthesia','Blocked|crit')}</div>
+ <div class="g2"><div class="stack">${card(L('Purchase orders · 3-way match','Dalabyada iibka'),table(['PO','Supplier','Receipt','Invoice','Status'],[['<span class="mono">PO-2611-044</span>','Hormuud Medical Supplies','Received 22 Nov','SI-7741 · matched',pill('Approved','ok')],['<span class="mono">PO-2611-039</span>','Gacal Pharma','Partial (60%)','SI-7736',pill('Review','warn')],['<span class="mono">PO-2611-031</span>','Bakaal Lab Reagents','Received 18 Nov','SI-7702 · duplicate of SI-7690',pill('Rejected','crit')],['<span class="mono">PO-2611-047</span>','Durdur Equipment','—','—',pill('Ordered','info')]]))}
+ ${card(L('Equipment & CSSD','Qalabka & CSSD'),table(['Asset','Status','Next action'],[['CT-2 Siemens · RAD',pill('OutOfService','crit'),'Tube replacement · vendor 26 Nov'],['Anaesthesia machine OT-3',pill('OutOfService','crit'),'Calibration EQ-7781 · 25 Nov'],['Autoclave A2 · CSSD',pill('Available','ok'),'Batch CSSD-2611-032 running'],['Infusion pumps × 24',pill('Due','warn'),'Annual safety test 01 Dec']]))}</div>
+ <div class="stack">${card(L('Roster · today','Jadwalka shaqada'),`<div class="list">${li('sun','Day shift 07:00–19:00','142 rostered · 4 sick leave · 2 cover requests','')}${li('moon','Night shift 19:00–07:00','44 rostered · ICU short 1 RN',pill('Gap','warn'))}</div>`)}
+ ${card(L('Credential expiry','Dhicitaanka shahaadooyinka'),`<div class="list">${li('id-card','Ubah Kahin · BLS certificate','Expires 08 Dec 2026',pill('Due','warn'))}${li('id-card','Dr. Leyla Osman · practising licence','Expires 15 Dec 2026',pill('Due','warn'))}</div>`)}
+ <div class="note info">${ic('lock')}<span>Individual salaries are visible to HR and payroll approvers only. Payroll totals post to the ledger after approval.</span></div></div></div>`;
+
+TPL.ai=r=>{
+ const D=[['1F40','Plasmodium falciparum malaria',412,468,'+18%',97],['BA00','Essential hypertension',388,521,'+2%',12],['CA40','Pneumonia',201,236,'+9%',31],['5A11','Type 2 diabetes mellitus',176,244,'−1%',22],['1A40','Infectious gastroenteritis',149,162,'−12%',40],['1B10','Respiratory tuberculosis','<5','<5','—','—']];
+ const can=r.acc.ai360==='S'||r.acc.ai360==='A';
+ return header(r,L('Hospital 360 · October 2026','Warbixinta 360 · Oktoobar 2026'),`${ic('file-text')}Report v3 · snapshot SNAP-2610-07`)+
+ card(L('Report lifecycle','Wareegga warbixinta'),`<div class="card-b">${pipe(M.ai360.st,['✓','✓','2/3','—','—'],2)}<div class="chips" style="margin-top:12px"><span class="chip">Finance approver · Daahir Lugey ✓</span><span class="chip">Clinical approver · Dr. Kowsar Ibbaan — pending</span><span class="chip">Owner · Mustafe Xirsi — pending</span></div></div>`,`<span class="pill ok">27 / 27 numbers match snapshot</span>`)+
+ `<div class="g2"><div class="stack">${card(L('AI narrative','Sharaxaadda AI'),`<div class="card-b"><div class="note info" style="margin-bottom:14px">${ic('sparkles')}<span><b>AI-written section.</b> Every number below is copied from computed metrics and checked by a program before review. The model never queries the database.</span></div>
+ <p class="ai-p">Recognized revenue reached <b>${money(185400,false)}</b> <span class="cite">M-FIN-012</span>, up 2.8% on September, while operating expenses rose 1.2% to <b>${money(121200,false)}</b> <span class="cite">M-FIN-020</span>. Cash collected trailed revenue by ${money(13470,false)} <span class="cite">M-FIN-031</span>, mostly MRI and surgical invoices issued in the last week.</p>
+ <p class="ai-p">Confirmed falciparum malaria rose 18% to 412 unique patients <span class="cite">M-DIS-1F40</span>, concentrated in under-15s and the Hodan branch. This is hospital activity, not community prevalence.</p>
+ <p class="ai-p">Bed occupancy was 83% <span class="cite">M-OPS-BED</span> with ALOS 4.1 days <span class="cite">M-OPS-ALOS</span>. CT-2 downtime (9 days) <span class="cite">M-EQ-CT2</span> raised median CT report turnaround to 2 h 05.</p>
+ <p class="ai-p faint" style="font-size:13px"><b>Suggested next investigations:</b> malaria case mix by branch; unbilled MRI slots during CT-2 downtime. <b>Limitations:</b> 3.1% of encounters still uncoded.</p>
+ ${can?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="btn pri" data-act="reauth">${ic('badge-check')}Approve section</button><button class="btn" data-act="toast" data-v="Draft rejected · regeneration queued from the same snapshot">Reject & regenerate</button></div><div id="reauthBox"></div>`:`<div class="note">${ic('eye')}<span class="muted">You can read this report. Approval belongs to the finance, clinical and owner sign-offs.</span></div>`}</div>`)}</div>
+ <div class="stack">${card(L('Top conditions · confirmed','Cudurrada ugu badan'),table(['ICD-11','Condition','Patients','Enc.','vs Sep'],D.map(d=>[`<span class="mono">${d[0]}</span>`,d[1],`<b>${d[2]}</b>`,d[3],d[4]]),[2,3,4]),`<span class="faint" style="font-size:11.5px">Unique patients · ruled-out excluded</span>`)}
+ <div class="note">${ic('eye-off')}<span class="muted" style="font-size:13px">Cohorts under 5 patients are suppressed. Suspected cases are counted separately and never mixed with confirmed.</span></div>
+ ${card(L('Report history','Taariikhda warbixinnada'),`<div class="list">${li('file-check','September 2026 · v2','Published 06 Oct · PDF + Excel · signed manifest',pill('Published','ok'))}${li('file-check','August 2026 · v1','Published 05 Sep',pill('Published','ok'))}</div>`)}</div></div>`};
+
+TPL.security=r=>header(r,L('Security & audit','Amniga & hubinta'),`${ic('shield')}Tenant · Hiil Medical Group`)+
+ `<div class="kpis">${kpi(L('Audit events · 24 h','Dhacdooyinka hubinta'),'41,906','hash chain intact','Verified|ok')}${kpi(L('Denied requests','Codsiyada la diiday'),'38','12 from one session','Investigate|warn')}${kpi(L('Break-glass to review','Gelitaan degdeg ah'),'1','due in 22 h')}${kpi(L('Last restore drill','Tijaabadii dib-u-celinta'),'RTO 2 h 41','target 4 h · RPO 9 min','Passed|ok')}</div>
+ <div class="g2"><div class="stack">${card(L('Audit explorer','Baaraha hubinta'),table(['Time','Actor','Action','Resource','Hash'],[['08:05:12','Hamdi Yuusuf · Cashier','DENY read','/patients/66f…/timeline','<span class="mono">a91f…3c0e</span>'],['08:11:40','Dr. Hodan Warsame','sign','clinical_note CN-88123 v2','<span class="mono">4be2…91aa</span>'],['08:20:03','Mustafe Xirsi','publish','role_matrix v14','<span class="mono">77d0…e215</span>'],['08:31:56','Dr. Siciid Xuseen','raise','critical_result K+ 6.8','<span class="mono">0c3a…5f48</span>'],['08:40:22','AI gateway','generate','ai_report_section v3 (read-only)','<span class="mono">e6b1…02cd</span>']]),`<button class="btn sm" data-act="toast" data-v="Protected export queued · watermark + dual approval">${ic('download')}Protected export</button>`)}</div>
+ <div class="stack">${card(L('Break-glass review','Dib-u-eegista gelitaanka'),`<div class="card-b stack" style="gap:10px"><div class="note crit">${ic('siren')}<span><b>Dr. Liibaan Dualeh</b> opened <span class="mono">MGD-18-001158</span> at 02:14<br>Reason: unconscious patient, no relationship on file · scope 45 min · 14 records read</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="toast" data-v="Marked justified · review closed">Justified</button><button class="btn danger" data-act="toast" data-v="Escalated to Data Protection Officer">Escalate</button></div></div>`)}
+ ${card(L('Access reviews · Q4','Dib-u-eegista gelitaanka'),`<div class="card-b stack" style="gap:12px">${[['Finance roles',18,18],['Clinical privileged',61,74],['Super admins',3,3],['Integration clients',4,6]].map(c=>`<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>${c[0]}</span><span class="num muted">${c[1]}/${c[2]}</span></div><div class="bar"><i style="width:${c[1]/c[2]*100}%"></i></div></div>`).join('')}</div>`)}</div></div>`;
+
+TPL.portal=r=>{
+ const cg=r.id==='caregiver',rf=r.id==='referring-provider';const p=cg?PATIENTS[3]:PATIENTS[0];
+ if(rf)return header(r,L('My referrals','Gudbintayda'),`${ic('hospital')}Kaah Clinic`)+`<div class="phone">${card('Referrals sent',`<div class="list">${li('send','REF-2611-088 · suspected appendicitis','Ambulance AMB-07 · ETA 14 min',pill('Dispatched','info'))}${li('send','REF-2611-071 · antenatal high-risk','Seen 19 Nov · summary shared',pill('HandedOver','ok'))}${li('send','REF-2611-064 · chest pain','Admitted · details withheld (consent)',pill('Arrived','info'))}</div>`)}<div class="note info">${ic('lock')}<span>You see the status of referrals you sent. Clinical details are shared only with the patient's consent.</span></div></div>`;
+ return header(r,cg?L('Caring for Cabdiraxmaan','Daryeelka Cabdiraxmaan'):L('My health','Caafimaadkayga'),`${ic('smartphone')}Patient portal`)+
+ `<div class="phone">${cg?`<div class="note warn">${ic('users')}<span><b>Proxy access.</b> You are acting for ${p.n} (7y) as parent. Access reviewed 02 Sep 2026.</span></div>`:''}
+ <div class="band" style="grid-template-columns:minmax(0,1fr) auto"><div><span class="eyebrow">${L('Next appointment','Ballanta xigta')}</span><h2 style="font-size:20px;margin-top:4px">${cg?'Pediatrics · Dr. Anwar Bile':'Follow-up · Dr. Hodan Warsame'}</h2><div class="meta"><span>Thu 27 Nov · 10:30</span><span>Mogadishu Central · Room 4</span></div></div><button class="btn pri" data-act="toast" data-v="Checked in · ticket A-041">Check in</button></div>
+ ${card(L('Results','Natiijooyinka'),`<div class="list">${li('flask-conical',cg?'Full blood count':'Malaria RDT',cg?'Reviewed by Dr. Bile · normal':'Released after clinician review',pill('Released','ok'))}${li('clock','HbA1c','Available after your doctor reviews it',pill('Pending','warn'))}</div>`)}
+ ${card(L('Bills','Biilasha'),`<div class="list">${li('receipt','INV-2611-03318 · OPD visit',money(42)+' due',`<button class="btn sm pri" data-act="toast" data-v="Redirecting to secure payment provider">Pay</button>`)}${li('receipt','INV-2610-02987','Paid '+money(85),pill('Paid','ok'))}</div>`)}
+ ${card(L('Messages','Fariimaha'),`<div class="list">${li('message-circle','Dr. Hodan Warsame','Take all 6 doses even if you feel better.','08:52')}</div>`)}
+ <div class="note">${ic('lock')}<span class="muted" style="font-size:13px">${L('Only your own record is visible. Sensitive results appear after a clinician releases them.','Diiwaankaaga kaliya ayaa muuqda.')}</span></div></div>`};
+
+/* ---- generic module page (every one of the 35 spec modules) ---- */
+const SUBJ={org:['Mogadishu Central','Hodan branch','Wadajir clinic','Radiology dept.','Ward 3B'],iam:['Dr. Mahad Nuur','Ubah Kahin','Role: Cashier v6','Grant: ICU temp','Hamse Aar'],inv:['Insulin glargine','Gloves M (box)','IV cannula 20G','Amoxicillin 500 mg','Saline 0.9% 1L'],proc:['Hormuud Medical Supplies','Gacal Pharma','Bakaal Lab Reagents','Durdur Equipment','Taaj Linen'],eq:['CT-2 Siemens','Autoclave A2','Infusion pump #14','Ventilator ICU-3','Anaesthesia OT-3'],hr:['Night roster W48','Payroll Nov 2026','Leave: Deeqa Ali','Contract: Dr. Osman','BLS renewals'],acct:['JE-2611-0012','Cost centre RAD','Expense: diesel','Period Nov 2026','Accrual: utilities'],bi:['OPD weekly','Bed occupancy','Lab TAT','Collections rate','No-show rate'],aifin:['Oct variance','Service mix Q3','Collections forecast','Refund anomalies','Payer mix'],aidis:['Malaria · Oct','Hypertension · Q3','Pneumonia <5y','Diabetes cohort','Readmissions'],ai360:['October 2026','September 2026','August 2026','July 2026','June 2026'],studio:['Antenatal intake v3','Refund approval flow','Discharge checklist','Incident form v2','Bed cleaning SLA'],intg:['FHIR R4 · MoH registry','DICOMweb · PACS','Mobile money webhook','SMS gateway','ICD-11 API'],sec:['Denied burst · 12 req','Restore drill Nov','Access review Q4','New device login','Key rotation'],plat:['Hiil Medical Group','Badbaado Hospital','Daryeel W&C','Nabad Specialist','Rajo Clinic Network'],qual:['Fall · Ward 3B','Med error near-miss','CLABSI review','Hand hygiene audit','Pressure injury'],bill:['INV-2611-03318','INV-2611-03315','INV-2611-03309','INV-2611-03320','INV-2611-03322'],ins:['CLM-2611-0201','CLM-2611-0198','CLM-2611-0187','CLM-2611-0176','CLM-2611-0170']};
+function modulePage(k){const m=M[k],r=role(),l=r.acc[k];const pc=['care','dx','meds'].includes(m.g)&&!SUBJ[k];
+ const rows=[0,1,2,3,4].map(i=>{const st=m.st[(i*2+k.length)%m.st.length];const subj=pc?pnt(PATIENTS[(i*3+k.length)%PATIENTS.length]):`<b>${(SUBJ[k]||SUBJ.org)[i]}</b>`;return[`<span class="mono">${k.toUpperCase()}-2611-${String(140+i*7)}</span>`,subj,pill(st,tone(st)),['08:42','08:17','07:55','Yesterday','22 Nov'][i],['Dr. Hodan Warsame','Deeqa Ali','Hamse Aar','Hawa Jibriil','System'][i]]});
+ const counts=m.st.map((_,i)=>[12,9,6,4,31][i]??3);
+ return`<div class="ph"><div class="ph-main"><span class="eyebrow">Spec ${m.num} · ${GROUPS.find(g=>g[0]===m.g)[1]}</span><h1>${modName(m)}</h1><div class="sub"><span>${ic('users')}${m.actors}</span><span>${L('Your access','Gelitaankaaga')}: ${lvBadge(l)} ${LV[l]}</span></div><p class="muted" style="margin:2px 0 0;max-width:72ch">${m.purpose}</p></div>${scopePanel(r)}</div>
+ ${card(L('Lifecycle','Wareegga'),`<div class="card-b">${pipe(m.st,counts,1)}</div>`,`<span class="faint" style="font-size:12px">Allowed transitions only · each one audited</span>`)}
+ <div class="g2"><div class="stack">${card(L('Records','Diiwaanada'),table(['ID','Subject','State','Updated','By'],rows),`<label class="search" style="height:32px;max-width:220px;margin:0">${ic('search')}<input placeholder="Filter" aria-label="Filter records"></label>${l==='V'?'':`<button class="btn sm pri" data-act="toast" data-v="New ${m.n.toLowerCase()} record · draft created">${ic('plus')}New</button>`}`)}</div>
+ <div class="stack">${card(L('Business rule','Xeerka'),`<div class="card-b stack" style="gap:10px"><div class="note warn">${ic('shield-alert')}<span>${m.rule}</span></div><div class="note ok">${ic('check-circle-2')}<span><b>Acceptance:</b> ${m.acc}</span></div></div>`)}
+ ${card(L('Data entities','Xogta'),`<div class="card-b chips">${m.ent.split(', ').map(e=>`<span class="chip">${e}</span>`).join('')}</div>`)}</div></div>`}
+
+function deniedPage(k){const m=M[k],r=role();return`<div class="card denied"><span class="code">HTTP 403 · PERMISSION_DENIED</span><h1>${modName(m)}</h1><p><b>${r.n}</b> has no grant for <span class="mono">${k}</span> at scope <span class="mono">${r.scope}</span>. The server returns 403 for this module even when the menu item is visible, so guessing a URL or ID does not help.</p><div class="chips" style="justify-content:center"><span class="chip">deny by default</span><span class="chip">correlationId 7f3c…a1</span><span class="chip">audited</span></div><button class="btn" data-act="go" data-v="home">${ic('arrow-left')}Back to my workspace</button></div>`}
+
+function rolesPage(){let h=`<div class="ph"><div class="ph-main"><span class="eyebrow">${L('Design map','Khariidadda naqshadda')}</span><h1>${L('Every role, every user','Doorar kasta, isticmaale kasta')}</h1><p class="muted" style="margin:0;max-width:75ch">${ROLES.length} roles across 10 levels, plus 2 system actors. Each card shows the sample user, how far their access reaches and the rule that limits them. Select a card to open HospitalOS as that person.</p></div></div>`;
+ TIERS.forEach(([t])=>{const rs=ROLES.filter(r=>r.t===t);h+=`<div class="tier-h"><h2>${tierName(t)}</h2><span class="n">L${t} · ${rs.length} ${rs.length>1?'roles':'role'}</span></div><div class="roles">${rs.map(r=>`<button class="rc" data-act="as" data-v="${r.id}"><div class="top-r"><span class="avatar">${initials(r.p)}</span><div style="min-width:0"><h3>${r.n}</h3><span class="faint" style="font-size:12px">${r.p}</span></div></div><p>${r.note}</p><div class="ft"><span class="chip">${r.scope}</span><span class="chip">${Object.keys(r.acc).length} modules</span>${r.mfa?'<span class="chip">MFA</span>':''}</div></button>`).join('')}</div>`});
+ h+=`<div class="tier-h"><h2>${L('System actors','Jilayaasha nidaamka')}</h2><span class="n">non-human · not switchable</span></div><div class="roles">${SYSTEM_ACTORS.map(a=>`<div class="rc"><div class="top-r"><span class="avatar">${ic(a[2])}</span><h3>${a[0]}</h3></div><p>${a[1]}</p></div>`).join('')}</div>`;return h}
+
+function matrixPage(){const cols=MOD;let h=`<div class="ph"><div class="ph-main"><span class="eyebrow">${L('Design map','Khariidadda naqshadda')}</span><h1>${L('Access matrix','Shaxda ogolaanshaha')}</h1><p class="muted" style="margin:0;max-width:75ch">${ROLES.length} roles × ${MOD.length} modules. Everything not granted is denied. Patient-level access is further limited by care relationship, branch and workflow state.</p><div class="chips" style="margin-top:6px">${Object.entries(LV).map(([k,v])=>`<span class="chip">${lvBadge(k)} ${v}</span>`).join('')}<span class="chip"><span class="x">·</span> no access</span></div></div></div>`;
+ h+=`<section class="card"><div class="tbl-wrap"><table class="mx"><thead><tr><th class="rn">Role</th>${cols.map(m=>`<th class="rot" title="${m.n}">${modName(m)}</th>`).join('')}</tr></thead><tbody>`;
+ TIERS.forEach(([t])=>{h+=`<tr class="tier"><td class="rn">L${t} · ${tierName(t)}</td><td colspan="${cols.length}"></td></tr>`;ROLES.filter(r=>r.t===t).forEach(r=>{h+=`<tr><td class="rn"><button class="btn sm" style="border:0;padding:0;background:none;height:auto;font-weight:600" data-act="as" data-v="${r.id}">${r.n}</button></td>${cols.map(m=>`<td>${r.acc[m.k]?lvBadge(r.acc[m.k]):'<span class="x">·</span>'}</td>`).join('')}</tr>`})});
+ return h+`</tbody></table></div></section>`}
+
+function flowsPage(){const F=[['Outpatient to diagnosis','Register/identify patient,Check-in,Create encounter,Nurse intake,Clinician exam,Orders,Verified results,Diagnosis coding,Sign note,Invoice,Discharge / follow-up'],['Emergency to inpatient','Arrival,Triage,Emergency encounter,Investigations / treatment,Admission request,Bed reservation,Assigned handover,Ward admission,Rounds / transfers,Discharge'],['Radiology','Imaging order,Protocol & patient verification,Schedule,Acquisition,DICOM study registration,Radiologist interpretation,Preliminary (if allowed),Signed final,Critical notification,Clinician acknowledgement'],['Laboratory','Test order,Label / specimen collection,Sample accession,Processing / QC,Result validation,Verified release,Critical value notification,Clinician acknowledgement'],['Prescription & dispensing','Prescriber drafts,Validates & signs,Pharmacy verifies,Batch selection,Stock reservation (transaction),Dispense,Receipt & audit,Return / reversal if needed'],['Surgery','Case request,Room scheduling,Pre-op assessment + consent,Safety checks,Procedure record,Post-anesthesia recovery,Discharge / transfer'],['Revenue cycle','Service performed,Charge captured,Invoice issued,Payment intent,Provider confirmation,Payment allocation,Receipt,Ledger posting,Daily reconciliation'],['Monthly intelligence','Freeze period,Extract verified facts,Validate totals & lineage,Compute KPIs,AI narrative from metrics,Clinical + finance review,Approve,Publish / export,Archive version']];
+ const E='patient.created appointment.checked_in encounter.signed admission.created bed.assigned patient.discharged lab.result.finalized imaging.report.signed critical_result.raised medication.dispensed invoice.issued payment.settled refund.approved ledger.entry.posted period.closed analytics.snapshot.ready ai.report.reviewed ai.report.published'.split(' ');
+ return`<div class="ph"><div class="ph-main"><span class="eyebrow">${L('Design map','Khariidadda naqshadda')} · Spec §6</span><h1>${L('Workflows & domain events','Socodka shaqada & dhacdooyinka')}</h1><p class="muted" style="margin:0;max-width:75ch">The eight end-to-end journeys every screen supports. Steps run in this order; each transition is checked on the server and written to the audit trail.</p></div></div>
+ <div class="g2e">${F.map(f=>card(f[0],`<div class="card-b"><div class="rail">${f[1].split(',').map((s,i,a)=>`<span class="step">${s}</span>${i<a.length-1?'<span class="ar">→</span>':''}`).join('')}</div></div>`)).join('')}</div>
+ ${card(L('Cross-module domain events','Dhacdooyinka'),`<div class="card-b"><div class="chips">${E.map(e=>`<span class="chip">${e}</span>`).join('')}</div><p class="muted" style="font-size:12.5px;margin:12px 0 0">Envelope: <span class="mono">eventId, eventType, version, tenantId, hospitalId, aggregateType, aggregateId, happenedAt, actorId, correlationId, idempotencyKey, payload, checksum</span>. Emitted through a transactional outbox; consumers are retry-safe.</p></div>`)}`}
+
+/* ================= ROUTER ================= */
+function render(){
+ renderShell();const r=role();let h;
+ if(S.view==='home'){h=r.home.startsWith('module:')?modulePage(r.home.slice(7)):TPL[r.home](r)}
+ else if(S.view==='roles')h=rolesPage();else if(S.view==='matrix')h=matrixPage();else if(S.view==='flows')h=flowsPage();
+ else if(S.view.startsWith('m:')){const k=S.view.slice(2);h=r.acc[k]?modulePage(k):deniedPage(k)}
+ $('#viewIn').innerHTML=h;icons();save();
+}
+function openSwitch(){const m=$('#switcher');m.hidden=false;$('#swQ').value='';renderSwitch();$('#swP').textContent=`${ROLES.length} roles in 10 levels. Pick one to see HospitalOS exactly as that person does. In production every simulate-as-user session is audited.`;setTimeout(()=>$('#swQ').focus(),30)}
+function renderSwitch(){const q=$('#swQ').value.trim().toLowerCase();$('#swB').innerHTML=TIERS.map(([t])=>{const rs=ROLES.filter(r=>r.t===t&&(!q||(r.n+' '+r.p+' '+r.id).toLowerCase().includes(q)));if(!rs.length)return'';return`<div class="tg"><h4><span class="mono">L${t}</span>${tierName(t)}</h4>${rs.map(r=>`<button class="ro ${r.id===S.role?'on':''}" data-act="as" data-v="${r.id}"><span class="avatar">${initials(r.p)}</span><span><b>${r.n}</b><span>${r.p} · ${r.scope}</span></span></button>`).join('')}</div>`}).join('')||`<p class="muted">No role matches “${q}”.</p>`;icons()}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const a=t.dataset.act,v=t.dataset.v;
+ if(a==='go'){S.view=v;S.bed=null;$('#app').classList.remove('nav-open');render();window.scrollTo(0,0)}
+ else if(a==='switch'){openSwitch()}
+ else if(a==='closeswitch'){$('#switcher').hidden=true}
+ else if(a==='as'){S.role=v;S.view='home';S.bed=null;$('#switcher').hidden=true;$('#app').classList.remove('nav-open');render();window.scrollTo(0,0);toast(`${L('Now viewing as','Hadda waxaad u muuqataa')} ${RO[v].n} · ${RO[v].p}`,'user-round-check')}
+ else if(a==='locked'){S.locked=!S.locked;render()}
+ else if(a==='cur'){S.cur=v;render()}
+ else if(a==='lang'){S.lang=v;render()}
+ else if(a==='theme'){const root=document.documentElement;const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;root.dataset.theme=dark?'light':'dark';save()}
+ else if(a==='opennav'){$('#app').classList.add('nav-open')}
+ else if(a==='closenav'){$('#app').classList.remove('nav-open')}
+ else if(a==='feat'){const on=t.getAttribute('aria-pressed')!=='true';t.setAttribute('aria-pressed',on);toast(`${v} ${on?'enabled':'disabled'} · change recorded in audit log`)}
+ else if(a==='bed'){S.bed=+v;render()}
+ else if(a==='toast'){toast(v)}
+ else if(a==='notify'){toast(L('3 alerts: critical K+ result, CT-2 out of service, 2 refunds awaiting approval','3 digniinood: natiijo khatar ah, CT-2 ma shaqaynayo, 2 celin'),'bell')}
+ else if(a==='ack'){t.outerHTML=`<div class="note ok">${ic('check-circle-2')}<span>Acknowledged by Dr. Mahad Nuur · read-back confirmed · 08:38</span></div>`;icons();toast('Critical value acknowledgement recorded')}
+ else if(a==='sign'||a==='reauth'){const box=$(a==='sign'?'#signBox':'#reauthBox');if(box){box.innerHTML=`<div class="mfa">${ic('smartphone')}<span style="font-size:13px">${L('Enter the 6-digit code from your authenticator','Geli koodhka 6-da god')}</span><input id="mfaCode" inputmode="numeric" maxlength="6" placeholder="••••••" aria-label="MFA code"><button class="btn sm pri" data-act="mfaok">${L('Confirm','Xaqiiji')}</button></div>`;icons();$('#mfaCode').focus()}}
+ else if(a==='mfaok'){const c=$('#mfaCode');if(!c||!/^\d{6}$/.test(c.value)){toast(L('Enter all 6 digits to continue','Geli dhammaan 6-da god'),'alert-circle');return}t.closest('.mfa').outerHTML=`<div class="note ok" style="margin-top:10px">${ic('badge-check')}<span>${L('Signed and approved. Saved as an immutable version with an audit event.','Waa la saxiixay oo la ansixiyay.')}</span></div>`;icons();toast(L('Approved · audit event written','La ansixiyay · waa la diiwaangeliyay'))}
+});
+document.addEventListener('change',e=>{if(e.target.matches('[data-act="chk"]'))toast(e.target.checked?'Checklist item confirmed · timestamped':'Checklist item reopened')});
+$('#swQ').addEventListener('input',renderSwitch);
+$('#switcher').addEventListener('click',e=>{if(e.target.id==='switcher')$('#switcher').hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#switcher').hidden=true;$('#app').classList.remove('nav-open')}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSwitch()}});
+render();
+</script>
