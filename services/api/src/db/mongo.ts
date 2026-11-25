@@ -117,6 +117,12 @@ export class Data {
         db.collection(c).createIndex({ tenantId: 1, encounterId: 1, orderedAt: -1 }),
         db.collection(c).createIndex({ tenantId: 1, assetId: 1, status: 1, scheduledFor: 1 }),
       ]),
+      db.collection('prescriptions').createIndex({ tenantId: 1, encounterId: 1, createdAt: -1 }),
+      db.collection('prescriptions').createIndex({ tenantId: 1, branchId: 1, status: 1, signedAt: 1 }),
+      // Spec §8.1 idempotency: one dispense per key.
+      db.collection('dispense_events').createIndex({ tenantId: 1, idempotencyKey: 1 }, { unique: true }),
+      db.collection('dispense_events').createIndex({ tenantId: 1, prescriptionId: 1 }, { unique: true }),
+      db.collection('administrations').createIndex({ tenantId: 1, prescriptionId: 1, at: -1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
