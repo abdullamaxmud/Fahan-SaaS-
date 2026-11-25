@@ -19,6 +19,7 @@ import { nursingRoutes } from './modules/nursing/routes';
 import { orgRoutes } from './modules/org/routes';
 import { patientRoutes } from './modules/patients/routes';
 import { platformRoutes } from './modules/platform/routes';
+import { referralRoutes } from './modules/referrals/routes';
 import { surgeryRoutes } from './modules/surgery/routes';
 
 export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.env === 'test' ? 'silent' : 'info' })) {
@@ -63,6 +64,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/nursing', nursingRoutes(deps));
   tenant.use('/surgery', surgeryRoutes(deps));
   tenant.use('/maternity', maternityRoutes(deps));
+  tenant.use('/', referralRoutes(deps));
   tenant.use('/appointments', appointmentRoutes(deps));
   tenant.use('/audit', auditRoutes(deps));
   api.use(tenant);
