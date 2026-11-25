@@ -8,7 +8,7 @@ import { localDate } from '../../lib/time';
 import { objectId, parse } from '../../lib/validate';
 import { audit } from '../../middleware/audit';
 import { assertBranch, need } from '../../middleware/authorize';
-import { recordMovements, takeStock } from './stock';
+import { receiveLot, recordMovements, takeStock } from './stock';
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const qty = z.number().int().positive().max(1_000_000);
@@ -132,17 +132,7 @@ export function inventoryRoutes(deps: Deps): Router {
     await item(req, body.itemId);
     if (body.expiry <= today()) throw Errors.validation([{ path: 'expiry', message: 'This batch has already expired' }]);
     const a = req.actor!;
-    const lot = await txn(async (ss) => {
-      const existing = await db(req).collection('stock_lots').findOne({ storeId: s._id, itemId: body.itemId, batch: body.batch }, { session: ss });
-      if (existing && existing.expiry !== body.expiry) throw new AppError(409, 'BATCH_EXPIRY_MISMATCH', `Batch ${body.batch} is already recorded with expiry ${existing.expiry}`);
-      const up = await db(req).collection('stock_lots').findOneAndUpdate(
-        { tenantId: a.tenantId!, storeId: s._id, itemId: body.itemId, batch: body.batch },
-        { $inc: { quantity: body.quantity, version: 1 }, $setOnInsert: { expiry: body.expiry, branchId: s.branchId, createdAt: new Date() } },
-        { upsert: true, returnDocument: 'after', session: ss },
-      );
-      await recordMovements(db(req), ss, { tenantId: a.tenantId!, storeId: s._id, itemId: body.itemId, type: 'receive', by: a.userId, ref: body.supplierRef }, [{ lotId: up!._id, quantity: body.quantity }]);
-      return up!;
-    });
+    const lot = await txn((ss) => receiveLot(db(req), ss, { tenantId: a.tenantId!, storeId: s._id, branchId: s.branchId, itemId: body.itemId, batch: body.batch, expiry: body.expiry, quantity: body.quantity, by: a.userId, ref: body.supplierRef }));
     await audit(deps, req, { action: 'inv.receive', resource: `lot:${id(lot)}`, outcome: 'success', meta: { quantity: body.quantity } });
     res.status(201).json({ data: { lotId: id(lot), quantity: lot.quantity } });
   });

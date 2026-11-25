@@ -22,6 +22,7 @@ import { iamRoutes } from './modules/iam/routes';
 import { DIAGNOSTICS, RADIOLOGY, imagingRoutes } from './modules/imaging/routes';
 import { insuranceRoutes } from './modules/insurance/routes';
 import { inventoryRoutes } from './modules/inventory/routes';
+import { procurementRoutes } from './modules/procurement/routes';
 import { labRoutes } from './modules/lab/routes';
 import { maternityRoutes } from './modules/maternity/routes';
 import { nursingRoutes } from './modules/nursing/routes';
@@ -85,6 +86,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/accounting', accountingRoutes(deps));
   tenant.use('/billing', billingRoutes(deps));
   tenant.use('/insurance', insuranceRoutes(deps));
+  tenant.use('/procurement', procurementRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

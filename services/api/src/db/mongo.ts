@@ -153,6 +153,12 @@ export class Data {
       db.collection('policies').createIndex({ tenantId: 1, patientId: 1 }),
       db.collection('claims').createIndex({ tenantId: 1, invoiceId: 1 }, { unique: true, partialFilterExpression: { open: true }, name: 'one_open_claim' }),
       db.collection('claims').createIndex({ tenantId: 1, status: 1, createdAt: -1 }),
+      // Procurement (spec §5.16): a supplier's invoice number is recorded once.
+      db.collection('suppliers').createIndex({ tenantId: 1, code: 1 }, { unique: true }),
+      db.collection('purchase_orders').createIndex({ tenantId: 1, number: 1 }, { unique: true }),
+      db.collection('purchase_orders').createIndex({ tenantId: 1, status: 1, createdAt: -1 }),
+      db.collection('goods_receipts').createIndex({ orderId: 1 }),
+      db.collection('supplier_invoices').createIndex({ tenantId: 1, supplierId: 1, invoiceNo: 1 }, { unique: true, name: 'one_invoice_per_supplier_number' }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),

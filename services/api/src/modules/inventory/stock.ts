@@ -54,3 +54,20 @@ export async function recordMovements(
     { session: s },
   );
 }
+
+/** Adds a received batch to a store (creating the lot if new) and records the movement, in the caller's transaction. */
+export async function receiveLot(
+  db: Db,
+  s: ClientSession,
+  r: { tenantId: ObjectId; storeId: ObjectId; branchId: ObjectId; itemId: ObjectId; batch: string; expiry: string; quantity: number; by: ObjectId; ref?: string },
+): Promise<{ _id: ObjectId; quantity: number }> {
+  const existing = await db.collection('stock_lots').findOne({ storeId: r.storeId, itemId: r.itemId, batch: r.batch }, { session: s });
+  if (existing && existing.expiry !== r.expiry) throw new AppError(409, 'BATCH_EXPIRY_MISMATCH', `Batch ${r.batch} is already recorded with expiry ${existing.expiry}`);
+  const up = await db.collection('stock_lots').findOneAndUpdate(
+    { tenantId: r.tenantId, storeId: r.storeId, itemId: r.itemId, batch: r.batch },
+    { $inc: { quantity: r.quantity, version: 1 }, $setOnInsert: { expiry: r.expiry, branchId: r.branchId, createdAt: new Date() } },
+    { upsert: true, returnDocument: 'after', session: s },
+  );
+  await recordMovements(db, s, { tenantId: r.tenantId, storeId: r.storeId, itemId: r.itemId, type: 'receive', by: r.by, ref: r.ref }, [{ lotId: up!._id, quantity: r.quantity }]);
+  return { _id: up!._id, quantity: up!.quantity as number };
+}
