@@ -17,6 +17,9 @@ const ROUTES: Record<string, string> = {
   org: '/admin/branches',
   iam: '/admin/users',
   sec: '/admin/audit',
+  mpi: '/patients',
+  appt: '/appointments',
+  opd: '/encounters',
 };
 
 function Icon({ name }: { name: string }) {
