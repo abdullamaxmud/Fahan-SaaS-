@@ -2,12 +2,13 @@
 
 Multi-tenant SaaS hospital operating platform. Built from the *Advanced Hospital Management System Developer Documentation* (v1.0).
 
-**Status: Phase 3 — Inpatient & specialty.**
+**Status: Phase 4 — Diagnostics & medicines.**
 
 - Phase 1 (done): identity, MFA, 55 roles, one database per hospital, organisation setup, tamper-evident audit trail.
 - Phase 2 (done): patient index with duplicate detection and reversible merges, consent, clinic schedules and appointments without double-booking, check-in queue, outpatient visits with vitals, signed and amended notes, ICD-11 diagnoses, patient timeline.
 - Phase 3 (done): allergies, break-glass with review, emergency department, wards and beds, admissions and discharge, nursing care plans and handovers, ICU device readings, theatres with the WHO safety checklist, maternity with linked newborn records, ambulance and referrals.
-- Next: Phase 4 — laboratory, radiology, pharmacy, inventory, blood bank, equipment.
+- Phase 4 (done): inventory by batch and expiry, laboratory with verification, QC and critical values, radiology and diagnostics with signed reports, equipment and calibration, pharmacy with allergy checks and idempotent dispensing, medication chart, blood bank with compatibility and traceability.
+- Next: Phase 5 — billing, insurance, accounting, procurement, HR and payroll.
 
 ## Layout
 

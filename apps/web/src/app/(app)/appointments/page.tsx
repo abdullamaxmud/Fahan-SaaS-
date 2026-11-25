@@ -50,6 +50,10 @@ export default function AppointmentsPage() {
   const [pq, setPq] = useState('');
   const [found, setFound] = useState<PatientBrief[]>([]);
   const [reason, setReason] = useState('');
+  const [wq, setWq] = useState('');
+  const [wFound, setWFound] = useState<PatientBrief[]>([]);
+  const [walkIn, setWalkIn] = useState<string | null>(null);
+  const [walkDoc, setWalkDoc] = useState('');
   const [sched, setSched] = useState({ weekdays: [1, 2, 3, 4, 6], start: '08:00', end: '12:00', slotMinutes: 20 });
   const load = useAction();
   const act = useAction();
@@ -196,6 +200,58 @@ export default function AppointmentsPage() {
 
         {canBook ? (
           <div className="grid gap-4">
+            <Card title={t('Walk-in (no booking)', 'Imaatin aan ballan lahayn')}>
+              <form
+                className="grid gap-2 px-4 pb-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setWFound(await api<PatientBrief[]>(`/patients?q=${encodeURIComponent(wq)}`).catch(() => []));
+                }}
+              >
+                <select className="input h-9" required value={walkDoc} onChange={(e) => setWalkDoc(e.target.value)} aria-label="Walk-in clinician">
+                  <option value="">{t('See which clinician?', 'Dhakhtarkee?')}</option>
+                  {providers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="flex gap-2">
+                  <input className="input h-9" value={wq} onChange={(e) => setWq(e.target.value)} placeholder={t('Name, MRN or phone', 'Magac, MRN ama telefoon')} aria-label="Walk-in patient" />
+                  <button className="btn h-9 w-9 justify-center p-0" aria-label="Search">
+                    <Search size={16} />
+                  </button>
+                </span>
+                {wFound.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    disabled={!walkDoc || act.busy}
+                    className="flex items-center justify-between rounded-lg border border-line p-2 text-left hover:border-accent disabled:opacity-50"
+                    onClick={async () => {
+                      const r = await act.run(() => api<{ encounterId: string; queueNo: number }>('/appointments/walk-in', { body: { patientId: p.id, providerId: walkDoc } }));
+                      if (r) {
+                        setWalkIn(`${fullName(p.names)} · #${r.queueNo} · ${providers.find((x) => x.id === walkDoc)?.name ?? ''}`);
+                        setWFound([]);
+                        setWq('');
+                        await refresh();
+                      }
+                    }}
+                  >
+                    <span>
+                      <b className="block text-[13px]">{fullName(p.names)}</b>
+                      <span className="font-mono text-[11.5px] text-ink-3">{p.mrn}</span>
+                    </span>
+                    <LogIn size={16} className="text-accent-2" />
+                  </button>
+                ))}
+                {walkIn ? (
+                  <span className="rounded-lg bg-accent-soft px-3 py-2 text-[13px] text-accent-2">
+                    {t('Checked in', 'Waa la galiyay')}: {walkIn}
+                  </span>
+                ) : null}
+              </form>
+            </Card>
             <Card title={t('Book a slot', 'Qabso waqti')}>
               <div className="grid gap-3 px-4 pb-4">
                 <div className="flex flex-wrap gap-1.5">

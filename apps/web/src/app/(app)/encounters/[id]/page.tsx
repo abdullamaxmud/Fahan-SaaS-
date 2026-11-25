@@ -6,6 +6,7 @@ import { VITALS, VITAL_BY_CODE, searchIcd } from '@fahan/terminology';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
+import { OrdersPanel } from '@/components/OrdersPanel';
 import { useReauth } from '@/components/Reauth';
 import { PatientBand, type PatientBrief } from '@/components/clinical';
 import { Card, ErrorNote, Field, Pill, fieldErrors, statusTone, useAction } from '@/components/ui';
@@ -241,6 +242,7 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
         </div>
 
         <div className="grid gap-4">
+          <OrdersPanel encounterId={id} closed={closed} canOrder={canSign} canChart={canObs} />
           <Card title={t('Vital signs', 'Calaamadaha nolosha')}>
             {canObs ? (
               <form

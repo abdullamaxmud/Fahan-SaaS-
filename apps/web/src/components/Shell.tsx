@@ -28,6 +28,13 @@ const ROUTES: Record<string, string> = {
   sx: '/surgery',
   mat: '/maternity',
   amb: '/referrals',
+  lab: '/lab',
+  rad: '/radiology',
+  dx: '/diagnostics',
+  rx: '/pharmacy',
+  inv: '/inventory',
+  bb: '/bloodbank',
+  eq: '/equipment',
 };
 
 function Icon({ name }: { name: string }) {

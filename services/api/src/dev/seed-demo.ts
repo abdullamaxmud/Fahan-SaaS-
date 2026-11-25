@@ -68,6 +68,14 @@ const people: [string, string, string, boolean][] = [
   ['midwife', 'Maryan Gure', 'midwife', true],
   ['dispatch', 'Abdirisaaq Hurre', 'dispatch', true],
   ['auditor', 'Axmed Gaas', 'security-auditor', false],
+  ['labtech', 'Hamse Aar', 'lab-tech', true],
+  ['pathologist', 'Dr. Siciid Xuseen', 'pathologist', true],
+  ['radiographer', 'Mowliid Kaariye', 'radiographer', true],
+  ['radiologist', 'Dr. Asha Galaal', 'radiologist', true],
+  ['pharmacist', 'Ugaaso Diiriye', 'pharmacist', true],
+  ['storekeeper', 'Cali Bulxan', 'storekeeper', true],
+  ['bloodbank', 'Shukri Dhimbil', 'bloodbank', true],
+  ['biomedical', 'Eng. Jaamac Dirir', 'biomedical', false],
 ];
 const ids: Record<string, unknown> = {};
 for (const [key, name, role, branchBound] of people) {
@@ -116,6 +124,36 @@ for (const key of ['obs', 'midwife']) {
     [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ tenantId: t.insertedId, providerId: ids[key], branchId: branch.insertedId, weekday, start: '08:00', end: '16:00', slotMinutes: 30, createdAt: now })),
   );
 }
+
+// Phase 4: lab catalogue, pharmacy stock, devices and blood units.
+const tid = t.insertedId;
+const bid = branch.insertedId;
+await db.collection('lab_tests').insertMany([
+  { tenantId: tid, code: 'K', name: 'Potassium', specimen: 'serum', turnaroundMinutes: 60, active: true, analytes: [{ code: 'K', name: 'Potassium', kind: 'numeric', unit: 'mmol/L', refLow: 3.5, refHigh: 5.1, criticalLow: 2.5, criticalHigh: 6.0 }], createdAt: now },
+  { tenantId: tid, code: 'CBC', name: 'Full blood count', specimen: 'blood', turnaroundMinutes: 90, active: true, analytes: [{ code: 'HB', name: 'Haemoglobin', kind: 'numeric', unit: 'g/dL', refLow: 12, refHigh: 16, criticalLow: 7 }, { code: 'WBC', name: 'White cells', kind: 'numeric', unit: '10^9/L', refLow: 4, refHigh: 11 }], createdAt: now },
+  { tenantId: tid, code: 'MRDT', name: 'Malaria rapid test', specimen: 'blood', turnaroundMinutes: 30, active: true, analytes: [{ code: 'PF', name: 'P. falciparum antigen', kind: 'text' }], createdAt: now },
+]);
+const pharmacy = await db.collection('stores').insertOne({ tenantId: tid, branchId: bid, code: 'PHARM', name: 'Main pharmacy', kind: 'pharmacy', createdAt: now });
+await db.collection('stores').insertOne({ tenantId: tid, branchId: bid, code: 'MAIN', name: 'Main store', kind: 'main', createdAt: now });
+const nextYear = `${now.getUTCFullYear() + 1}-06-30`;
+for (const [code, name, unit, ingredient, strength, form, classes] of [
+  ['PCM500', 'Paracetamol 500 mg tablet', 'tablet', 'paracetamol', '500 mg', 'tablet', []],
+  ['AMOX500', 'Amoxicillin 500 mg capsule', 'capsule', 'amoxicillin', '500 mg', 'capsule', ['penicillin', 'beta-lactam']],
+  ['AL80', 'Artemether-lumefantrine 80/480 mg tablet', 'tablet', 'artemether-lumefantrine', '80/480 mg', 'tablet', ['antimalarial']],
+  ['AMLO5', 'Amlodipine 5 mg tablet', 'tablet', 'amlodipine', '5 mg', 'tablet', ['calcium-channel-blocker']],
+] as const) {
+  const it = await db.collection('items').insertOne({ tenantId: tid, code, name, unit, kind: 'medicine', reorderLevel: 50, medicine: { ingredient, strength, form, route: 'oral', classes: [...classes] }, createdAt: now });
+  await db.collection('stock_lots').insertOne({ tenantId: tid, storeId: pharmacy.insertedId, itemId: it.insertedId, branchId: bid, batch: `${code}-01`, expiry: nextYear, quantity: 500, version: 1, createdAt: now });
+}
+await db.collection('assets').insertMany([
+  { tenantId: tid, branchId: bid, code: 'XR-1', name: 'Digital X-ray room 1', kind: 'imaging', modality: 'XR', status: 'Available', createdAt: now },
+  { tenantId: tid, branchId: bid, code: 'CT-1', name: 'CT scanner 64-slice', kind: 'imaging', modality: 'CT', status: 'Available', createdAt: now },
+  { tenantId: tid, branchId: bid, code: 'ECG-1', name: '12-lead ECG', kind: 'diagnostic', modality: 'ECG', status: 'Available', createdAt: now },
+]);
+const unitExpiry = new Date(now.getTime() + 30 * 86_400_000).toISOString().slice(0, 10);
+await db.collection('blood_units').insertMany(
+  ['O-', 'O+', 'A+', 'B+'].map((group, i) => ({ tenantId: tid, branchId: bid, unitNumber: `U-DEMO-00${i + 1}`, group, component: 'red-cells', volumeMl: 280, collectedOn: now.toISOString().slice(0, 10), expiry: unitExpiry, status: 'Available', history: [{ event: 'received', at: now }], createdAt: now })),
+);
 
 const yy = now.getUTCFullYear().toString().slice(2);
 const pts: [string, string, string, string, string][] = [
