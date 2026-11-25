@@ -87,6 +87,9 @@ export class Data {
       // Spec §5.7: no simultaneous active admissions for one patient.
       db.collection('admissions').createIndex({ tenantId: 1, patientId: 1 }, { unique: true, partialFilterExpression: { activeLock: true }, name: 'one_active_admission' }),
       db.collection('admissions').createIndex({ tenantId: 1, branchId: 1, status: 1, createdAt: -1 }),
+      db.collection('theatres').createIndex({ tenantId: 1, branchId: 1, code: 1 }, { unique: true }),
+      db.collection('surgery_cases').createIndex({ tenantId: 1, theatreId: 1, startsAt: 1, endsAt: 1 }),
+      db.collection('surgery_cases').createIndex({ tenantId: 1, surgeonId: 1, startsAt: 1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
