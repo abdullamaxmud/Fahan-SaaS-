@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens from the approved HospitalOS prototype ("scrub teal" on green-biased neutrals). RGB triplets for Tailwind alpha. */
+/* Design tokens from the approved Fahan prototype ("scrub teal" on green-biased neutrals). RGB triplets for Tailwind alpha. */
 :root {
   --bg: 241 245 243; --surface: 255 255 255; --surface-2: 231 238 235; --surface-3: 217 228 224;
   --ink: 12 24 22; --ink-2: 70 89 85; --ink-3: 118 138 133; --line: 210 221 217; --line-2: 191 205 200;

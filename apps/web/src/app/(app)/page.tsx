@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LEVEL_LABEL, MODULES, ROLE_BY_ID, SCOPES, TIERS } from '@hospitalos/policy';
+import { LEVEL_LABEL, MODULES, ROLE_BY_ID, SCOPES, TIERS } from '@fahan/policy';
 import { useLang } from '@/lib/i18n';
 import { useMe } from '@/lib/session';
 import { Card, PageHeader, Pill } from '@/components/ui';

@@ -1,4 +1,4 @@
-# HospitalOS
+# Fahan
 
 Multi-tenant SaaS hospital operating platform. Built from the *Advanced Hospital Management System Developer Documentation* (v1.0).
 

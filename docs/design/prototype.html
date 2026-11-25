@@ -1,4 +1,4 @@
-<title>HospitalOS</title>
+<title>Fahan</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -318,7 +318,7 @@ td .s{display:block;font-size:12px;color:var(--ink-3)}
   <aside class="side" id="side" aria-label="Main navigation">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-5 3 10 3-8 2 3h6"/></svg></div>
-      <div><b>HospitalOS</b><small id="brandSub">Hospital operating platform</small></div>
+      <div><b>Fahan</b><small id="brandSub">Hospital operating platform</small></div>
     </div>
     <button class="who" id="whoBtn" data-act="switch" aria-label="Switch role"></button>
     <nav class="nav" id="nav"></nav>
@@ -354,7 +354,7 @@ td .s{display:block;font-size:12px;color:var(--ink-3)}
 
 <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 <script>
-/* ================= DATA — taken from the HospitalOS developer specification ================= */
+/* ================= DATA — taken from the Fahan developer specification ================= */
 const GROUPS=[
  ['platform','Platform','Madasha'],['care','Patient care','Daryeelka bukaanka'],['dx','Diagnostics','Baaritaannada'],
  ['meds','Medicines & supply','Daawooyinka & sahayda'],['rev','Revenue','Dakhliga'],['people','People','Dadka'],
@@ -473,8 +473,8 @@ const PATIENTS=[
 
 /* ================= STATE ================= */
 const S={role:'platform-owner',view:'home',lang:'en',cur:'USD',locked:false,bed:null};
-try{const s=JSON.parse(localStorage.getItem('hos-state')||'{}');if(s.role&&RO[s.role])S.role=s.role;if(s.lang)S.lang=s.lang;if(s.theme)document.documentElement.dataset.theme=s.theme}catch(e){}
-function save(){try{localStorage.setItem('hos-state',JSON.stringify({role:S.role,lang:S.lang,cur:S.cur,theme:document.documentElement.dataset.theme||''}))}catch(e){}}
+try{const s=JSON.parse(localStorage.getItem('fahan-state')||'{}');if(s.role&&RO[s.role])S.role=s.role;if(s.lang)S.lang=s.lang;if(s.theme)document.documentElement.dataset.theme=s.theme}catch(e){}
+function save(){try{localStorage.setItem('fahan-state',JSON.stringify({role:S.role,lang:S.lang,cur:S.cur,theme:document.documentElement.dataset.theme||''}))}catch(e){}}
 
 /* ================= HELPERS ================= */
 const $=s=>document.querySelector(s);
@@ -655,7 +655,7 @@ TPL.cashier=r=>{
  <div class="g2"><div class="stack">${card(L('Invoices to collect','Biilasha la qaadayo'),table(['Invoice','Patient','Items','Total','Paid','Status',''],I.map(x=>[`<span class="mono">${x[0]}</span>`,`<b>${PATIENTS[x[1]].n}</b><span class="s mono">${PATIENTS[x[1]].mrn}</span>`,x[2],money(x[3]),money(x[4]),pill(x[5],tone(x[5]==='PartiallyPaid'?'Pending':x[5])),x[5]!=='Paid'?`<button class="btn sm pri" data-act="toast" data-v="Payment ${x[0]} captured · receipt printed · allocation posted">Take payment</button>`:'']),[3,4]))}
  ${card(L('Shift reconciliation','Is-waafajinta'),`<div class="card-b stack" style="gap:12px">${ch.map(c=>`<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>${c[0]}</span><b class="num">${money(c[1])}</b></div><div class="bar"><i style="width:${c[1]/tot*100}%"></i></div></div>`).join('')}<div class="note warn">${ic('scale')}<span>Counted cash differs from system by <b>${money(2)}</b>. Close the shift with a discrepancy note for supervisor approval.</span></div><button class="btn" data-act="toast" data-v="Shift close sent for approval">Close shift</button></div>`)}</div>
  <div class="stack">${card(L('Patient record','Kaarka bukaanka'),`<div class="card-b denied" style="padding:28px 12px"><span class="code">403 · PERMISSION_DENIED</span><h3 style="font-size:18px">${L('Clinical history is not available','Taariikhda caafimaadka lama heli karo')}</h3><p style="font-size:13px">Cashiers see demographics and charges only. The API refuses clinical reads even when called directly.</p></div>`)}
- <div class="note info">${ic('credit-card')}<span>Cards are captured on the payment provider's hosted page. HospitalOS never stores card numbers or CVV.</span></div></div></div>`};
+ <div class="note info">${ic('credit-card')}<span>Cards are captured on the payment provider's hosted page. Fahan never stores card numbers or CVV.</span></div></div></div>`};
 
 TPL.finance=r=>{
  const mo=['May','Jun','Jul','Aug','Sep','Oct'],rev=[162.4,168.9,171.2,176.0,180.3,185.4],exp=[112.0,114.6,117.9,118.3,119.8,121.2];
@@ -725,7 +725,7 @@ function modulePage(k){const m=M[k],r=role(),l=r.acc[k];const pc=['care','dx','m
 
 function deniedPage(k){const m=M[k],r=role();return`<div class="card denied"><span class="code">HTTP 403 · PERMISSION_DENIED</span><h1>${modName(m)}</h1><p><b>${r.n}</b> has no grant for <span class="mono">${k}</span> at scope <span class="mono">${r.scope}</span>. The server returns 403 for this module even when the menu item is visible, so guessing a URL or ID does not help.</p><div class="chips" style="justify-content:center"><span class="chip">deny by default</span><span class="chip">correlationId 7f3c…a1</span><span class="chip">audited</span></div><button class="btn" data-act="go" data-v="home">${ic('arrow-left')}Back to my workspace</button></div>`}
 
-function rolesPage(){let h=`<div class="ph"><div class="ph-main"><span class="eyebrow">${L('Design map','Khariidadda naqshadda')}</span><h1>${L('Every role, every user','Doorar kasta, isticmaale kasta')}</h1><p class="muted" style="margin:0;max-width:75ch">${ROLES.length} roles across 10 levels, plus 2 system actors. Each card shows the sample user, how far their access reaches and the rule that limits them. Select a card to open HospitalOS as that person.</p></div></div>`;
+function rolesPage(){let h=`<div class="ph"><div class="ph-main"><span class="eyebrow">${L('Design map','Khariidadda naqshadda')}</span><h1>${L('Every role, every user','Doorar kasta, isticmaale kasta')}</h1><p class="muted" style="margin:0;max-width:75ch">${ROLES.length} roles across 10 levels, plus 2 system actors. Each card shows the sample user, how far their access reaches and the rule that limits them. Select a card to open Fahan as that person.</p></div></div>`;
  TIERS.forEach(([t])=>{const rs=ROLES.filter(r=>r.t===t);h+=`<div class="tier-h"><h2>${tierName(t)}</h2><span class="n">L${t} · ${rs.length} ${rs.length>1?'roles':'role'}</span></div><div class="roles">${rs.map(r=>`<button class="rc" data-act="as" data-v="${r.id}"><div class="top-r"><span class="avatar">${initials(r.p)}</span><div style="min-width:0"><h3>${r.n}</h3><span class="faint" style="font-size:12px">${r.p}</span></div></div><p>${r.note}</p><div class="ft"><span class="chip">${r.scope}</span><span class="chip">${Object.keys(r.acc).length} modules</span>${r.mfa?'<span class="chip">MFA</span>':''}</div></button>`).join('')}</div>`});
  h+=`<div class="tier-h"><h2>${L('System actors','Jilayaasha nidaamka')}</h2><span class="n">non-human · not switchable</span></div><div class="roles">${SYSTEM_ACTORS.map(a=>`<div class="rc"><div class="top-r"><span class="avatar">${ic(a[2])}</span><h3>${a[0]}</h3></div><p>${a[1]}</p></div>`).join('')}</div>`;return h}
 
@@ -748,7 +748,7 @@ function render(){
  else if(S.view.startsWith('m:')){const k=S.view.slice(2);h=r.acc[k]?modulePage(k):deniedPage(k)}
  $('#viewIn').innerHTML=h;icons();save();
 }
-function openSwitch(){const m=$('#switcher');m.hidden=false;$('#swQ').value='';renderSwitch();$('#swP').textContent=`${ROLES.length} roles in 10 levels. Pick one to see HospitalOS exactly as that person does. In production every simulate-as-user session is audited.`;setTimeout(()=>$('#swQ').focus(),30)}
+function openSwitch(){const m=$('#switcher');m.hidden=false;$('#swQ').value='';renderSwitch();$('#swP').textContent=`${ROLES.length} roles in 10 levels. Pick one to see Fahan exactly as that person does. In production every simulate-as-user session is audited.`;setTimeout(()=>$('#swQ').focus(),30)}
 function renderSwitch(){const q=$('#swQ').value.trim().toLowerCase();$('#swB').innerHTML=TIERS.map(([t])=>{const rs=ROLES.filter(r=>r.t===t&&(!q||(r.n+' '+r.p+' '+r.id).toLowerCase().includes(q)));if(!rs.length)return'';return`<div class="tg"><h4><span class="mono">L${t}</span>${tierName(t)}</h4>${rs.map(r=>`<button class="ro ${r.id===S.role?'on':''}" data-act="as" data-v="${r.id}"><span class="avatar">${initials(r.p)}</span><span><b>${r.n}</b><span>${r.p} · ${r.scope}</span></span></button>`).join('')}</div>`}).join('')||`<p class="muted">No role matches “${q}”.</p>`;icons()}
 
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const a=t.dataset.act,v=t.dataset.v;

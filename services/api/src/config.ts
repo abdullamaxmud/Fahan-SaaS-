@@ -4,7 +4,7 @@ const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   MONGO_URI: z.string().min(1).default('mongodb://127.0.0.1:27018/?replicaSet=rs0&directConnection=true'),
-  CONTROL_DB: z.string().regex(/^[a-z0-9_]+$/).default('hos_control'),
+  CONTROL_DB: z.string().regex(/^[a-z0-9_]+$/).default('fahan_control'),
   DATA_KEY: z.string().optional(),
   SESSION_TTL_HOURS: z.coerce.number().positive().default(12),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),

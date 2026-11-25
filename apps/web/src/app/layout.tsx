@@ -7,7 +7,7 @@ const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-disp
 const body = Instrument_Sans({ subsets: ['latin'], variable: '--font-body' });
 const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight: ['400', '500', '600'] });
 
-export const metadata: Metadata = { title: 'HospitalOS', description: 'Hospital operating platform' };
+export const metadata: Metadata = { title: 'Fahan', description: 'Hospital operating platform' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

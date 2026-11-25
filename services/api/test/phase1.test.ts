@@ -38,11 +38,11 @@ afterAll(async () => {
 
 describe('owner bootstrap', () => {
   it('runs once and refuses a second time', async () => {
-    const r = await bootstrapOwner(h.data, h.config, { email: 'owner@hospitalos.test', name: 'Ilhaan Daahir' });
+    const r = await bootstrapOwner(h.data, h.config, { email: 'owner@fahan.test', name: 'Ilhaan Daahir' });
     ownerSecret = r.secret;
-    await expect(bootstrapOwner(h.data, h.config, { email: 'other@hospitalos.test', name: 'X' })).rejects.toBeInstanceOf(AlreadyBootstrappedError);
+    await expect(bootstrapOwner(h.data, h.config, { email: 'other@fahan.test', name: 'X' })).rejects.toBeInstanceOf(AlreadyBootstrappedError);
     owner = new Client(h.app);
-    expect((await owner.login('owner@hospitalos.test', r.password)).body.data.mfa).toBe('pending');
+    expect((await owner.login('owner@fahan.test', r.password)).body.data.mfa).toBe('pending');
   });
 
   it('blocks platform actions until MFA is verified', async () => {
@@ -55,7 +55,7 @@ describe('owner bootstrap', () => {
 
   it('rejects wrong passwords with a generic error', async () => {
     const c = new Client(h.app);
-    const res = await c.login('owner@hospitalos.test', 'wrong-password-123');
+    const res = await c.login('owner@fahan.test', 'wrong-password-123');
     expect(res.status).toBe(401);
     expect(res.body.error).toMatchObject({ code: 'INVALID_CREDENTIALS' });
     expect(res.body.error.correlationId).toBeTruthy();
@@ -74,7 +74,7 @@ describe('tenant provisioning', () => {
       tenants[slug] = { token: res.body.data.adminInvite.token, email: `admin@${slug}.test` };
     }
     const dbs = (await h.data.client.db().admin().listDatabases()).databases.map((d) => d.name);
-    expect(dbs).toEqual(expect.arrayContaining(['hos_t_hiil', 'hos_t_badbaado']));
+    expect(dbs).toEqual(expect.arrayContaining(['fahan_t_hiil', 'fahan_t_badbaado']));
   });
 
   it('rejects a duplicate hospital code', async () => {
@@ -231,7 +231,7 @@ describe('Phase 1 exit criteria', () => {
 
 describe('audit integrity', () => {
   it('the hash chain verifies, and tampering is detected', async () => {
-    const db = h.data.tenant('hos_t_hiil');
+    const db = h.data.tenant('fahan_t_hiil');
     const ok = await verifyAuditChain(db);
     expect(ok.ok).toBe(true);
     expect(ok.count).toBeGreaterThan(10);

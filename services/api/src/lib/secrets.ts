@@ -19,6 +19,6 @@ export async function checkPassword(stored: string | undefined, pw: string): Pro
 
 export const totp = {
   newSecret: () => authenticator.generateSecret(),
-  uri: (account: string, secret: string) => authenticator.keyuri(account, 'HospitalOS', secret),
+  uri: (account: string, secret: string) => authenticator.keyuri(account, 'Fahan', secret),
   check: (code: string, secret: string) => authenticator.check(code, secret),
 };

@@ -7,7 +7,7 @@ export function Brand({ sub }: { sub?: string }) {
         </svg>
       </div>
       <div>
-        <b className="font-display text-[19px] font-extrabold tracking-tight">HospitalOS</b>
+        <b className="font-display text-[19px] font-extrabold tracking-tight">Fahan</b>
         {sub ? <small className="-mt-0.5 block text-[11px] text-ink-3">{sub}</small> : null}
       </div>
     </div>

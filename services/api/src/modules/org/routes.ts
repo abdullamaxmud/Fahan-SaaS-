@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { isBranchBound } from '@hospitalos/policy';
+import { isBranchBound } from '@fahan/policy';
 import { z } from 'zod';
 import type { Deps } from '../../context';
 import { Errors } from '../../lib/errors';

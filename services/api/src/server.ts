@@ -7,7 +7,7 @@ const log = pino({ level: 'info' });
 const config = loadConfig();
 const data = await Data.connect(config.mongoUri, config.controlDb);
 const server = createApp({ data, config }, log).listen(config.port, () => {
-  log.info({ port: config.port, env: config.env }, 'HospitalOS API listening');
+  log.info({ port: config.port, env: config.env }, 'Fahan API listening');
 });
 
 async function shutdown(signal: string) {

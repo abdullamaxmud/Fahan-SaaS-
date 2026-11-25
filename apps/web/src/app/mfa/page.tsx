@@ -56,7 +56,7 @@ export default function MfaPage() {
             <p className="mt-1 text-[13px] text-ink-2">
               {state === 'enroll'
                 ? t('Your role needs two-step sign-in. Scan the code with an authenticator app, then enter the 6-digit code it shows.', 'Doorkaagu wuxuu u baahan yahay laba-tallaabo. Ku sawir koodhka app-ka, kadibna geli 6-da god.')
-                : t('Open your authenticator app and enter the 6-digit code for HospitalOS.', 'Fur app-ka oo geli 6-da god ee HospitalOS.')}
+                : t('Open your authenticator app and enter the 6-digit code for Fahan.', 'Fur app-ka oo geli 6-da god ee Fahan.')}
             </p>
           </div>
           {state === 'enroll' && qr ? (

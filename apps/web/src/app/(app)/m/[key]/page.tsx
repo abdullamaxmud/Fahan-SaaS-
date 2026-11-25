@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { use } from 'react';
-import { LEVEL_LABEL, MODULE_BY_KEY, isModuleKey, type ModuleKey } from '@hospitalos/policy';
+import { LEVEL_LABEL, MODULE_BY_KEY, isModuleKey, type ModuleKey } from '@fahan/policy';
 import { useLang } from '@/lib/i18n';
 import { useMe } from '@/lib/session';
 import { Card, PageHeader, Pill } from '@/components/ui';

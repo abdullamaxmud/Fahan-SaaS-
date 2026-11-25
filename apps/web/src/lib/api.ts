@@ -18,7 +18,7 @@ export class ApiError extends Error {
 }
 
 function csrfToken(): string {
-  const m = document.cookie.match(/(?:^|;\s*)hos_csrf=([^;]+)/);
+  const m = document.cookie.match(/(?:^|;\s*)fahan_csrf=([^;]+)/);
   return m?.[1] ? decodeURIComponent(m[1]) : '';
 }
 

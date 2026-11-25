@@ -1,7 +1,7 @@
 import { MongoClient, type Db } from 'mongodb';
 
-const TENANT_DB = /^hos_t_[a-z0-9-]{3,40}$/;
-export const tenantDbName = (slug: string) => `hos_t_${slug}`;
+const TENANT_DB = /^fahan_t_[a-z0-9-]{3,40}$/;
+export const tenantDbName = (slug: string) => `fahan_t_${slug}`;
 
 /**
  * Data access root. The control plane holds tenants, platform users and sessions — never clinical data.

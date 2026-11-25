@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import type { ObjectId } from 'mongodb';
 import { z } from 'zod';
-import { TENANT_ROLES, canGrantRole, effectiveScope, isBranchBound } from '@hospitalos/policy';
+import { TENANT_ROLES, canGrantRole, effectiveScope, isBranchBound } from '@fahan/policy';
 import type { Deps } from '../../context';
 import { newToken, sha256 } from '../../lib/crypto';
 import { AppError, Errors } from '../../lib/errors';

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Copy, UserPlus } from 'lucide-react';
-import { TIERS, canGrantRole, effectiveScope, isBranchBound } from '@hospitalos/policy';
+import { TIERS, canGrantRole, effectiveScope, isBranchBound } from '@fahan/policy';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';

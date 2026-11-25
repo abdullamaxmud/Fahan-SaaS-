@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import type { Level, ModuleKey, Permissions, Scope } from '@hospitalos/policy';
-import { levelRank } from '@hospitalos/policy';
+import type { Level, ModuleKey, Permissions, Scope } from '@fahan/policy';
+import { levelRank } from '@fahan/policy';
 import { ApiError, api } from './api';
 
 export interface Me {

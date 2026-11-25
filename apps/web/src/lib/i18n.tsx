@@ -9,7 +9,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>('en');
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('hos-lang');
+      const saved = localStorage.getItem('fahan-lang');
       if (saved === 'so' || saved === 'en') setLangState(saved);
     } catch {}
   }, []);
@@ -19,7 +19,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   const setLang = (l: Lang) => {
     setLangState(l);
     try {
-      localStorage.setItem('hos-lang', l);
+      localStorage.setItem('fahan-lang', l);
     } catch {}
   };
   return <Ctx.Provider value={{ lang, setLang }}>{children}</Ctx.Provider>;

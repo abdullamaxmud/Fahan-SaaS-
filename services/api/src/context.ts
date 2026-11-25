@@ -1,5 +1,5 @@
 import type { Db, ObjectId } from 'mongodb';
-import type { Permissions, Scope } from '@hospitalos/policy';
+import type { Permissions, Scope } from '@fahan/policy';
 import type { Config } from './config';
 import type { Data } from './db/mongo';
 

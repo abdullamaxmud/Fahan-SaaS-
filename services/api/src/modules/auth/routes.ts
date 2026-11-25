@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import type { Collection, Db } from 'mongodb';
 import { z } from 'zod';
-import { requiresMfa } from '@hospitalos/policy';
+import { requiresMfa } from '@fahan/policy';
 import { writeAudit } from '../../audit/audit';
 import type { Deps, MfaState, SessionDoc } from '../../context';
 import { decrypt, encrypt, newToken, sha256 } from '../../lib/crypto';

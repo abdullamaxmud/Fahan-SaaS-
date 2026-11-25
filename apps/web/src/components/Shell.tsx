@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { LayoutDashboard, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
-import { MODULES, MODULE_GROUPS, ROLE_BY_ID, TIERS, type ModuleGroup } from '@hospitalos/policy';
+import { MODULES, MODULE_GROUPS, ROLE_BY_ID, TIERS, type ModuleGroup } from '@fahan/policy';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { useMe } from '@/lib/session';

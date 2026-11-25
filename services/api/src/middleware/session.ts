@@ -1,11 +1,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { effectivePermissions, effectiveScope, requiresMfa } from '@hospitalos/policy';
+import { effectivePermissions, effectiveScope, requiresMfa } from '@fahan/policy';
 import type { Actor, Deps, SessionDoc } from '../context';
 import { sha256 } from '../lib/crypto';
 import { Errors } from '../lib/errors';
 
-export const SESSION_COOKIE = 'hos_sid';
-export const CSRF_COOKIE = 'hos_csrf';
+export const SESSION_COOKIE = 'fahan_sid';
+export const CSRF_COOKIE = 'fahan_csrf';
 export const CSRF_HEADER = 'x-csrf-token';
 
 /**

@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from 'express';
 import type { ObjectId } from 'mongodb';
-import { can, isBranchBound, type Level, type ModuleKey } from '@hospitalos/policy';
+import { can, isBranchBound, type Level, type ModuleKey } from '@fahan/policy';
 import { writeAudit } from '../audit/audit';
 import type { Deps } from '../context';
 import { Errors } from '../lib/errors';
