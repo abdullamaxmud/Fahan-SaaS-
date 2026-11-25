@@ -81,6 +81,12 @@ export function pharmacyRoutes(deps: Deps): Router {
     return issues;
   }
 
+  /** Formulary for prescribers and pharmacy: medicines only, no stock or cost data. */
+  r.get('/formulary', need(deps, 'rx', 'V'), async (req, res) => {
+    const list = await db(req).collection('items').find({ tenantId: req.actor!.tenantId, kind: 'medicine' }, { projection: { code: 1, name: 1, medicine: 1 } }).sort({ name: 1 }).limit(1000).toArray();
+    res.json({ data: list.map((i) => ({ id: id(i), code: i.code, name: i.name, ...i.medicine })) });
+  });
+
   r.post('/prescriptions', need(deps, 'rx', 'S'), async (req, res) => {
     const body = parse(NewRx, req.body);
     const { e } = await orderingContext(deps, req, body.encounterId);

@@ -42,6 +42,16 @@ afterAll(async () => {
 
 const rx = (itemId: string, quantity = 12) => H.staff.doctor!.c.post('/pharmacy/prescriptions', { encounterId: enc, itemId, dose: '1 tablet', frequency: 'qid', durationDays: 3, quantity });
 
+describe('formulary', () => {
+  it('prescribers see medicines (not stock); cashiers do not', async () => {
+    const f = (await H.staff.doctor!.c.get('/pharmacy/formulary')).body.data;
+    expect(f.map((x: { code: string }) => x.code)).toEqual(['AMOX500', 'PCM500']);
+    expect(f[0]).toMatchObject({ ingredient: 'amoxicillin', classes: ['penicillin', 'beta-lactam'] });
+    expect(f[0]).not.toHaveProperty('usable');
+    expect((await H.staff.cashier!.c.get('/pharmacy/formulary')).status).toBe(403);
+  });
+});
+
 describe('prescribing safety', () => {
   it('a drug class allergy blocks signing until the prescriber gives a reason', async () => {
     const d = (await rx(amox, 21)).body.data.id;
