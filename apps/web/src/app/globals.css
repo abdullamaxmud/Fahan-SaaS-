@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens from the approved HospitalOS prototype ("scrub teal" on green-biased neutrals). RGB triplets for Tailwind alpha. */
+:root {
+  --bg: 241 245 243; --surface: 255 255 255; --surface-2: 231 238 235; --surface-3: 217 228 224;
+  --ink: 12 24 22; --ink-2: 70 89 85; --ink-3: 118 138 133; --line: 210 221 217; --line-2: 191 205 200;
+  --accent: 10 116 104; --accent-2: 7 90 81; --accent-soft: 210 235 230; --on-accent: 255 255 255;
+  --ok: 28 122 69; --ok-soft: 220 240 227; --warn: 159 98 11; --warn-soft: 246 234 210;
+  --crit: 189 45 57; --crit-soft: 248 221 224; --info: 42 92 166; --info-soft: 222 231 246;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: 9 17 15; --surface: 15 26 24; --surface-2: 21 34 31; --surface-3: 28 44 40;
+    --ink: 226 237 234; --ink-2: 155 174 169; --ink-3: 107 128 122; --line: 32 49 45; --line-2: 44 64 59;
+    --accent: 54 194 173; --accent-2: 98 215 197; --accent-soft: 13 56 50; --on-accent: 3 32 27;
+    --ok: 77 193 129; --ok-soft: 17 48 33; --warn: 226 169 69; --warn-soft: 51 39 15;
+    --crit: 239 102 111; --crit-soft: 57 22 25; --info: 112 161 238; --info-soft: 19 34 59;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: 9 17 15; --surface: 15 26 24; --surface-2: 21 34 31; --surface-3: 28 44 40;
+  --ink: 226 237 234; --ink-2: 155 174 169; --ink-3: 107 128 122; --line: 32 49 45; --line-2: 44 64 59;
+  --accent: 54 194 173; --accent-2: 98 215 197; --accent-soft: 13 56 50; --on-accent: 3 32 27;
+  --ok: 77 193 129; --ok-soft: 17 48 33; --warn: 226 169 69; --warn-soft: 51 39 15;
+  --crit: 239 102 111; --crit-soft: 57 22 25; --info: 112 161 238; --info-soft: 19 34 59;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+  font-size: 14px;
+}
+h1, h2, h3 { @apply font-display; text-wrap: balance; letter-spacing: -0.01em; }
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; border-radius: 6px; }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-3; }
+
+@layer components {
+  .btn { @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[9px] border border-line-2 bg-surface px-3.5 text-[13px] font-semibold hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-primary { @apply border-accent bg-accent text-on-accent hover:bg-accent-2; }
+  .input { @apply h-10 w-full rounded-lg border border-line-2 bg-surface-2 px-3 text-[14px] outline-none focus:border-accent; }
+  .card { @apply rounded-[14px] border border-line bg-surface; }
+  .th { @apply whitespace-nowrap border-b border-line px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-3; }
+  .td { @apply border-b border-line px-4 py-2.5 align-middle; }
+}
