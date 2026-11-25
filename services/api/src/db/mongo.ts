@@ -69,6 +69,7 @@ export class Data {
       db.collection('appointments').createIndex({ tenantId: 1, patientId: 1, startsAt: -1 }),
       db.collection('encounters').createIndex({ tenantId: 1, patientId: 1, startedAt: -1 }),
       db.collection('encounters').createIndex({ tenantId: 1, clinicianIds: 1, status: 1 }),
+      db.collection('encounters').createIndex({ tenantId: 1, type: 1, branchId: 1, 'ed.state': 1 }),
       db.collection('encounters').createIndex({ tenantId: 1, appointmentId: 1 }, { unique: true, partialFilterExpression: { appointmentId: { $exists: true } } }),
       db.collection('observations').createIndex({ tenantId: 1, patientId: 1, effectiveAt: -1 }),
       db.collection('observations').createIndex({ tenantId: 1, encounterId: 1 }),
