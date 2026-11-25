@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import type { Document, ObjectId } from 'mongodb';
 import { z } from 'zod';
-import { can, isBranchBound } from '@fahan/policy';
+import { isBranchBound, type Level } from '@fahan/policy';
 import { VITAL_BY_CODE, isIcd11Code } from '@fahan/terminology';
 import type { Deps } from '../../context';
 import { AppError, Errors } from '../../lib/errors';
@@ -9,9 +9,10 @@ import { localDate } from '../../lib/time';
 import { idParam, objectId, parse } from '../../lib/validate';
 import { audit } from '../../middleware/audit';
 import { deny, need } from '../../middleware/authorize';
-import { requireRecentMfa } from '../../middleware/session';
-import { linkedPatientIds, loadPatient } from '../patients/access';
+import { assertRecentMfa } from '../../middleware/session';
+import { ENC_TYPES, encLevelOk, encModules, linkedPatientIds, loadPatient } from '../patients/access';
 import { nextQueueNo, openEncounter } from './service';
+import { publicAllergy } from '../clinical/routes';
 
 const Walkin = z.object({ patientId: objectId, reason: z.string().trim().max(300).optional() });
 const ListQuery = z.object({ status: z.enum(['active', 'closed', 'all']).default('active') });
@@ -22,7 +23,8 @@ const Obs = z.object({
   unit: z.string().optional(),
   effectiveAt: z.string().datetime().optional(),
   source: z.enum(['manual', 'device']).default('manual'),
-});
+  deviceId: z.string().trim().min(2).max(60).optional(),
+}).refine((o) => o.source !== 'device' || o.deviceId, { message: 'Device readings must name the device (spec §5.10)', path: ['deviceId'] });
 const Correct = z.object({ value: z.number().finite(), reason: z.string().trim().min(3).max(300) });
 const NoteKind = z.enum(['history', 'examination', 'assessment', 'plan', 'progress']);
 const NewNote = z.object({ kind: NoteKind, text: z.string().trim().min(1).max(20_000) });
@@ -44,11 +46,14 @@ export function encounterRoutes(deps: Deps): Router {
   const r = Router();
   const db = (req: Request) => req.actor!.db!;
 
-  async function loadEncounter(req: Request, opts: { writable?: boolean } = {}) {
+  async function loadEncounter(req: Request, opts: { writable?: boolean; level?: Level } = {}) {
     const a = req.actor!;
     const e = await db(req).collection('encounters').findOne({ _id: idParam(req.params.id, 'Encounter'), tenantId: a.tenantId });
     if (!e) throw Errors.notFound('Encounter');
     const patient = await loadPatient(deps, req, e.patientId, { clinical: true });
+    const level = opts.level ?? 'V';
+    // The module that governs the visit depends on its type (OPD, emergency, inpatient).
+    if (!encLevelOk(a.perms, e.type, level)) await deny(deps, req, `encounter:${e._id.toHexString()}`, `requires ${encModules(e.type).join('|')}:${level}`);
     if (opts.writable && e.status === 'Closed') throw Errors.conflict('ENCOUNTER_CLOSED', 'This visit is closed. Open a new visit to add information');
     return { e, patient };
   }
@@ -57,12 +62,12 @@ export function encounterRoutes(deps: Deps): Router {
     if (e.status === 'Open') await db(req).collection('encounters').updateOne({ _id: e._id, status: 'Open' }, { $set: { status: 'InProgress' } });
   }
 
-  const canWriteObs = (req: Request) => can(req.actor!.perms, 'nur', 'E') || can(req.actor!.perms, 'opd', 'E');
-
-  r.get('/', need(deps, 'opd', 'V'), async (req, res) => {
+  r.get('/', async (req, res) => {
     const q = parse(ListQuery, req.query);
     const a = req.actor!;
-    const filter: Document = { tenantId: a.tenantId };
+    const types = ENC_TYPES.filter((t) => encLevelOk(a.perms, t, 'V'));
+    if (!types.length) await deny(deps, req, 'encounters', 'no clinical module');
+    const filter: Document = { tenantId: a.tenantId, type: { $in: types } };
     if (q.status === 'active') filter.status = { $ne: 'Closed' };
     if (q.status === 'closed') filter.status = 'Closed';
     if (a.scope === 'assigned-patient') filter.clinicianIds = a.userId;
@@ -85,22 +90,26 @@ export function encounterRoutes(deps: Deps): Router {
     });
   });
 
-  /** Walk-in visit opened by a clinician or nurse at their own branch. */
+  /**
+   * Follow-up visit opened by a clinician for a patient already in their care. Opening a visit must
+   * never be a way to create a care relationship: new walk-ins are checked in by reception
+   * (POST /appointments/walk-in), and emergencies without a relationship use break-glass.
+   */
   r.post('/', need(deps, 'opd', 'E'), async (req, res) => {
     const body = parse(Walkin, req.body);
     const a = req.actor!;
     if (!a.branchId) throw Errors.validation([{ message: 'Your account is not assigned to a branch' }]);
     const branch = await db(req).collection('branches').findOne({ _id: a.branchId, tenantId: a.tenantId });
     if (!branch) throw Errors.notFound('Branch');
-    const p = await db(req).collection('patients').findOne({ _id: body.patientId, tenantId: a.tenantId, branchIds: a.branchId, status: { $ne: 'Merged' } });
-    if (!p) throw Errors.notFound('Patient');
+    const p = await loadPatient(deps, req, body.patientId, { clinical: true });
+    if (p.status === 'Merged') throw Errors.conflict('PATIENT_MERGED', 'Open the visit on the surviving record');
     const queueNo = await nextQueueNo(req, branch.code, localDate(deps.config.now(), branch.timezone));
     const eid = await openEncounter(req, { patientId: p._id, branchId: a.branchId, clinicianIds: [a.userId], queueNo, reason: body.reason });
     await audit(deps, req, { action: 'opd.encounter.open', resource: `encounter:${eid.toHexString()}`, outcome: 'success', meta: { walkIn: true } });
     res.status(201).json({ data: { id: eid.toHexString(), status: 'Open', queueNo } });
   });
 
-  r.get('/:id', need(deps, 'opd', 'V'), async (req, res) => {
+  r.get('/:id', async (req, res) => {
     const { e, patient } = await loadEncounter(req);
     const a = req.actor!;
     const [obs, notes, dx, team] = await Promise.all([
@@ -113,7 +122,7 @@ export function encounterRoutes(deps: Deps): Router {
       db(req).collection('diagnoses').find({ encounterId: e._id }).sort({ primary: -1, recordedAt: 1 }).toArray(),
       db(req).collection('users').find({ _id: { $in: e.clinicianIds } }, { projection: { name: 1, roles: 1 } }).toArray(),
     ]);
-    const allergies = (patient.allergies as unknown[]) ?? [];
+    const allergies = (await db(req).collection('allergies').find({ patientId: patient._id, status: 'active' }).toArray()).map(publicAllergy);
     res.json({
       data: {
         id: id(e),
@@ -168,9 +177,9 @@ export function encounterRoutes(deps: Deps): Router {
     });
   });
 
-  r.post('/:id/care-team', need(deps, 'opd', 'E'), async (req, res) => {
+  r.post('/:id/care-team', async (req, res) => {
     const { userId } = parse(AddTeam, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'E' });
     const a = req.actor!;
     const u = await db(req).collection('users').findOne({ _id: userId, tenantId: a.tenantId, status: 'Active' });
     if (!u || (u.branchId && !u.branchId.equals(e.branchId))) throw Errors.validation([{ path: 'userId', message: 'Choose an active colleague from this branch' }]);
@@ -183,9 +192,8 @@ export function encounterRoutes(deps: Deps): Router {
   // ---- observations (spec §5.9: timestamp, source and unit required; corrections append) ----
 
   r.post('/:id/observations', async (req, res) => {
-    if (!canWriteObs(req)) await deny(deps, req, 'observations', 'requires nur:E or opd:E');
     const body = parse(Obs, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'E' });
     const def = VITAL_BY_CODE[body.code]!;
     if (body.unit && body.unit !== def.unit) throw Errors.validation([{ path: 'unit', message: `${def.name} is recorded in ${def.unit}` }]);
     if (body.value < def.min || body.value > def.max) {
@@ -202,6 +210,7 @@ export function encounterRoutes(deps: Deps): Router {
       value: Number(body.value.toFixed(def.decimals)),
       unit: def.unit,
       source: body.source,
+      deviceId: body.deviceId,
       status: 'Recorded',
       effectiveAt,
       recordedAt: new Date(),
@@ -214,9 +223,8 @@ export function encounterRoutes(deps: Deps): Router {
   });
 
   r.post('/:id/observations/:obsId/correct', async (req, res) => {
-    if (!canWriteObs(req)) await deny(deps, req, 'observations', 'requires nur:E or opd:E');
     const body = parse(Correct, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'E' });
     const obsId = idParam(req.params.obsId, 'Observation');
     const o = await db(req).collection('observations').findOne({ _id: obsId, encounterId: e._id });
     if (!o) throw Errors.notFound('Observation');
@@ -234,9 +242,9 @@ export function encounterRoutes(deps: Deps): Router {
 
   // ---- notes (spec §4.1: author, signer, version; signed notes are amended, never overwritten) ----
 
-  r.post('/:id/notes', need(deps, 'opd', 'E'), async (req, res) => {
+  r.post('/:id/notes', async (req, res) => {
     const body = parse(NewNote, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'E' });
     const a = req.actor!;
     const doc = { tenantId: a.tenantId, encounterId: e._id, patientId: e.patientId, ...body, status: 'Draft', authorId: a.userId, authorName: a.name, createdAt: new Date(), version: 1 };
     const ins = await db(req).collection('clinical_notes').insertOne(doc);
@@ -250,9 +258,9 @@ export function encounterRoutes(deps: Deps): Router {
     return n;
   }
 
-  r.patch('/:id/notes/:noteId', need(deps, 'opd', 'E'), async (req, res) => {
+  r.patch('/:id/notes/:noteId', async (req, res) => {
     const body = parse(EditNote, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'E' });
     const n = await loadNote(req, e);
     if (n.status !== 'Draft') throw Errors.conflict('NOTE_SIGNED', 'Signed notes cannot be edited. Add an amendment instead');
     const upd = await db(req)
@@ -263,8 +271,8 @@ export function encounterRoutes(deps: Deps): Router {
   });
 
   /** Authors may discard their own unsigned drafts; signed notes are never deleted. */
-  r.delete('/:id/notes/:noteId', need(deps, 'opd', 'E'), async (req, res) => {
-    const { e } = await loadEncounter(req, { writable: true });
+  r.delete('/:id/notes/:noteId', async (req, res) => {
+    const { e } = await loadEncounter(req, { writable: true, level: 'E' });
     const n = await loadNote(req, e);
     if (n.status !== 'Draft' || !n.authorId.equals(req.actor!.userId)) throw Errors.conflict('NOTE_SIGNED', 'Only your own unsigned drafts can be discarded');
     await db(req).collection('clinical_notes').deleteOne({ _id: n._id, status: 'Draft' });
@@ -272,8 +280,9 @@ export function encounterRoutes(deps: Deps): Router {
     res.status(204).end();
   });
 
-  r.post('/:id/notes/:noteId/sign', need(deps, 'opd', 'S'), requireRecentMfa(deps), async (req, res) => {
-    const { e } = await loadEncounter(req, { writable: true });
+  r.post('/:id/notes/:noteId/sign', async (req, res) => {
+    const { e } = await loadEncounter(req, { writable: true, level: 'S' });
+    assertRecentMfa(deps, req);
     const n = await loadNote(req, e);
     if (!n.authorId.equals(req.actor!.userId)) throw Errors.forbidden('Only the author can sign this note');
     const upd = await db(req)
@@ -285,9 +294,10 @@ export function encounterRoutes(deps: Deps): Router {
     res.json({ data: { id: id(n), status: 'Signed' } });
   });
 
-  r.post('/:id/notes/:noteId/amend', need(deps, 'opd', 'S'), requireRecentMfa(deps), async (req, res) => {
+  r.post('/:id/notes/:noteId/amend', async (req, res) => {
     const body = parse(Amend, req.body);
-    const { e } = await loadEncounter(req);
+    const { e } = await loadEncounter(req, { level: 'S' });
+    assertRecentMfa(deps, req);
     const n = await loadNote(req, e);
     if (n.status !== 'Signed') throw Errors.conflict('INVALID_TRANSITION', 'Only the current signed version of a note can be amended');
     const a = req.actor!;
@@ -328,9 +338,9 @@ export function encounterRoutes(deps: Deps): Router {
 
   // ---- diagnoses (ICD-11, certainty kept separate for disease metrics, spec §9.3) ----
 
-  r.post('/:id/diagnoses', need(deps, 'opd', 'S'), async (req, res) => {
+  r.post('/:id/diagnoses', async (req, res) => {
     const body = parse(NewDx, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'S' });
     if (body.primary && body.certainty === 'ruled_out') throw Errors.validation([{ path: 'primary', message: 'A ruled-out condition cannot be the primary diagnosis' }]);
     const a = req.actor!;
     if (body.primary) await db(req).collection('diagnoses').updateMany({ encounterId: e._id, primary: true }, { $set: { primary: false }, $inc: { version: 1 } });
@@ -352,9 +362,9 @@ export function encounterRoutes(deps: Deps): Router {
     res.status(201).json({ data: { id: ins.insertedId.toHexString(), code: body.code, certainty: body.certainty, primary: body.primary } });
   });
 
-  r.patch('/:id/diagnoses/:dxId', need(deps, 'opd', 'S'), async (req, res) => {
+  r.patch('/:id/diagnoses/:dxId', async (req, res) => {
     const body = parse(EditDx, req.body);
-    const { e } = await loadEncounter(req, { writable: true });
+    const { e } = await loadEncounter(req, { writable: true, level: 'S' });
     const d = await db(req).collection('diagnoses').findOne({ _id: idParam(req.params.dxId, 'Diagnosis'), encounterId: e._id });
     if (!d) throw Errors.notFound('Diagnosis');
     const certainty = body.certainty ?? d.certainty;
@@ -376,8 +386,9 @@ export function encounterRoutes(deps: Deps): Router {
     res.json({ data: { id: id(upd), certainty, primary, version: upd.version } });
   });
 
-  r.post('/:id/close', need(deps, 'opd', 'S'), async (req, res) => {
-    const { e } = await loadEncounter(req, { writable: true });
+  r.post('/:id/close', async (req, res) => {
+    const { e } = await loadEncounter(req, { writable: true, level: 'S' });
+    if (e.type !== 'OPD') throw Errors.conflict('USE_DISPOSITION', 'Emergency visits end with a disposition and admissions with a discharge');
     const signed = await db(req).collection('clinical_notes').countDocuments({ encounterId: e._id, status: 'Signed' });
     const drafts = await db(req).collection('clinical_notes').countDocuments({ encounterId: e._id, status: 'Draft' });
     const primary = await db(req).collection('diagnoses').findOne({ encounterId: e._id, primary: true, certainty: { $ne: 'ruled_out' } });

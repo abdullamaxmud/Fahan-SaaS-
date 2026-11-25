@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import type { Document, ObjectId, WithId } from 'mongodb';
-import { can, isBranchBound } from '@fahan/policy';
+import { can, isBranchBound, levelRank, type Level, type ModuleKey, type Permissions } from '@fahan/policy';
 import type { Deps } from '../../context';
 import { Errors } from '../../lib/errors';
 import { deny } from '../../middleware/authorize';
@@ -20,6 +20,20 @@ export function patientScopeFilter(req: Request): Record<string, unknown> {
   return {};
 }
 
+/** Visit types and the modules that govern them. */
+export const ENC_TYPES = ['OPD', 'ER', 'IP'] as const;
+const ENC_MODULES: Record<string, ModuleKey[]> = { OPD: ['opd', 'tele'], ER: ['er'], IP: ['opd', 'icu', 'mat', 'nur'] };
+export const encModules = (type: string): ModuleKey[] => ENC_MODULES[type] ?? ['opd'];
+export const encLevelOk = (perms: Permissions, type: string, level: Level): boolean =>
+  encModules(type).some((m) => levelRank(perms[m]) >= levelRank(level));
+
+/** An unexpired, self-declared emergency access grant (spec §3.4 break-glass). */
+export async function hasBreakGlass(req: Request, patientId: ObjectId): Promise<boolean> {
+  const a = req.actor!;
+  const g = await a.db!.collection('break_glass').findOne({ tenantId: a.tenantId, userId: a.userId, patientId, expiresAt: { $gt: new Date() } });
+  return Boolean(g);
+}
+
 /** Clinical content (notes, vitals, diagnoses, timeline) needs a clinical module, not just demographics. */
 export function hasClinicalAccess(req: Request): boolean {
   const p = req.actor!.perms;
@@ -33,6 +47,7 @@ export async function loadPatient(deps: Deps, req: Request, id: ObjectId, opts: 
   if (!p) throw Errors.notFound('Patient');
   if (opts.clinical && !hasClinicalAccess(req)) await deny(deps, req, `patient:${id.toHexString()}`, 'no clinical module');
   const scope = patientScopeFilter(req);
+  if (opts.clinical && (await hasBreakGlass(req, id))) return p;
   if ('careTeam' in scope && !(p.careTeam as ObjectId[] | undefined)?.some((u) => u.equals(a.userId))) {
     await deny(deps, req, `patient:${id.toHexString()}`, 'no care relationship');
   }

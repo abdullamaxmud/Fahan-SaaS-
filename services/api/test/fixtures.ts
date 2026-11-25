@@ -34,7 +34,11 @@ export async function setupHospital(h: Harness, roles: { key: string; role: stri
   const staff: Record<string, Staff> = {};
   for (const { key, role, branch } of roles) {
     const email = `${key}@hiil.test`;
-    const inv = await admin.post('/users', { email, name: key, roles: [role], branchId: branch === 2 ? branch2Id : branchId });
+    // Oversight roles are appointed by the platform owner, not by the hospital's own admins.
+    const oversight = role === 'security-auditor' || role === 'dpo';
+    const inv = oversight
+      ? await owner.post(`/platform/tenants/${t.body.data.tenant.id}/oversight-invite`, { email, name: key, role })
+      : await admin.post('/users', { email, name: key, roles: [role], branchId: branch === 2 ? branch2Id : branchId });
     expect(inv.status, JSON.stringify(inv.body)).toBe(201);
     const c = await activate(h, inv.body.data.invite.token, email);
     const me = await c.get('/auth/me');

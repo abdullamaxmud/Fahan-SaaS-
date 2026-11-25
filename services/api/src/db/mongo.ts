@@ -77,8 +77,12 @@ export class Data {
       db.collection('diagnoses').createIndex({ tenantId: 1, code: 1, certainty: 1, recordedAt: 1 }),
       db.collection('diagnoses').createIndex({ tenantId: 1, encounterId: 1 }),
       db.collection('diagnoses').createIndex({ tenantId: 1, patientId: 1, recordedAt: -1 }),
+      db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
+      db.collection('break_glass').createIndex({ tenantId: 1, userId: 1, patientId: 1, expiresAt: -1 }),
+      db.collection('break_glass').createIndex({ tenantId: 1, review: 1, createdAt: -1 }),
       db.collection('audit_events').createIndex({ seq: 1 }, { unique: true }),
       db.collection('audit_events').createIndex({ tenantId: 1, occurredAt: -1, actorId: 1 }),
+      db.collection('audit_events').createIndex({ actorId: 1, resource: 1 }),
     ]);
   }
 

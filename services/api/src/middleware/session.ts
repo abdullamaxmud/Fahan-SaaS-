@@ -100,10 +100,19 @@ export const requirePlatform: RequestHandler = (req, _res, next) => {
 };
 
 /** Spec §3.4: re-authentication for security-sensitive changes. */
-export function requireRecentMfa({ config }: Deps): RequestHandler {
+export function requireRecentMfa(deps: Deps): RequestHandler {
   return (req, _res, next) => {
-    const at = req.session?.mfaAt?.getTime() ?? 0;
-    if (Date.now() - at > config.reauthWindowMs) return next(Errors.reauthRequired());
-    next();
+    try {
+      assertRecentMfa(deps, req);
+      next();
+    } catch (e) {
+      next(e);
+    }
   };
+}
+
+/** Same check, for handlers that must first confirm the caller is allowed at all (403 before 401). */
+export function assertRecentMfa({ config }: Deps, req: Request): void {
+  const at = req.session?.mfaAt?.getTime() ?? 0;
+  if (Date.now() - at > config.reauthWindowMs) throw Errors.reauthRequired();
 }

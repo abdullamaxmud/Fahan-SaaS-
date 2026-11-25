@@ -26,6 +26,7 @@ const CreateSchedule = z
 const SlotQuery = z.object({ providerId: objectId, date: day });
 const ListQuery = z.object({ date: day, providerId: objectId.optional(), branchId: objectId.optional() });
 const Book = z.object({ patientId: objectId, providerId: objectId, startsAt: z.string().datetime(), reason: z.string().trim().max(300).optional() });
+const WalkIn = z.object({ patientId: objectId, providerId: objectId, reason: z.string().trim().max(300).optional() });
 const Cancel = z.object({ reason: z.string().trim().min(3).max(300) });
 
 /** Roles that run their own clinic list. */
@@ -215,6 +216,23 @@ export function appointmentRoutes(deps: Deps): Router {
       if ((e as { code?: number }).code === 11000) throw Errors.conflict('SLOT_TAKEN', 'Someone just booked that slot. Choose another time');
       throw e;
     }
+  });
+
+  /** Reception checks in a patient without a booking: queue number + visit with the chosen clinician. */
+  r.post('/walk-in', need(deps, 'appt', 'E'), async (req, res) => {
+    const body = parse(WalkIn, req.body);
+    const a = req.actor!;
+    const patient = await loadPatient(deps, req, body.patientId);
+    if (patient.status === 'Merged') throw Errors.conflict('PATIENT_MERGED', 'Check in the surviving record');
+    const prov = await provider(req, body.providerId);
+    const branchId = prov.branchId ?? a.branchId;
+    if (!branchId) throw Errors.validation([{ path: 'providerId', message: 'This clinician has no branch' }]);
+    await assertBranch(deps, req, branchId);
+    const branch = await branchOf(req, branchId);
+    const queueNo = await nextQueueNo(req, branch.code, localDate(now(), branch.timezone));
+    const encounterId = await openEncounter(req, { patientId: patient._id, branchId, clinicianIds: [prov._id], queueNo, reason: body.reason });
+    await audit(deps, req, { action: 'appt.walk_in', resource: `encounter:${encounterId.toHexString()}`, outcome: 'success', meta: { queueNo } });
+    res.status(201).json({ data: { encounterId: encounterId.toHexString(), queueNo } });
   });
 
   async function loadAppt(req: Request) {
