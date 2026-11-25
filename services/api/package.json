@@ -1,0 +1,37 @@
+{
+  "name": "@hospitalos/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "dev:db": "tsx src/dev/memory-db.ts",
+    "bootstrap:owner": "tsx --env-file-if-exists=.env src/cli/bootstrap-owner.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hospitalos/policy": "0.1.0",
+    "@node-rs/argon2": "2.0.2",
+    "cookie-parser": "1.4.7",
+    "express": "5.1.0",
+    "express-rate-limit": "7.5.0",
+    "helmet": "8.0.0",
+    "mongodb": "6.12.0",
+    "otplib": "12.0.1",
+    "pino": "9.6.0",
+    "pino-http": "10.3.0",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "1.4.8",
+    "@types/express": "5.0.0",
+    "@types/node": "22.10.2",
+    "@types/supertest": "6.0.2",
+    "mongodb-memory-server": "10.1.2",
+    "supertest": "7.0.0",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}
