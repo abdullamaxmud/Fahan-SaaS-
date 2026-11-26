@@ -98,6 +98,7 @@ export function imagingRoutes(deps: Deps, k: Kind): Router {
       signedAt: o.signedAt ?? null,
       addenda: o.addenda ?? [],
       critical: o.critical ?? null,
+      sharedWithPatient: o.sharedWithPatient ? { at: o.sharedWithPatient.at, byName: o.sharedWithPatient.byName } : null,
     };
   };
 

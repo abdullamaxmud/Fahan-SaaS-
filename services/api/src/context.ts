@@ -33,6 +33,10 @@ export interface Actor {
   /** Tenant database, resolved server-side from the session. Never from the request. */
   db?: Db;
   branchId?: ObjectId;
+  /** Portal accounts (patient, caregiver): the records this person may see — themselves or their dependants. */
+  patientIds?: ObjectId[];
+  /** Modules this hospital has switched off (spec §3.3 feature switchboard). */
+  disabledModules?: string[];
 }
 
 export interface Deps {

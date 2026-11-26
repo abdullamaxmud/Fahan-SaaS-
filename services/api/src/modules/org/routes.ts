@@ -30,6 +30,14 @@ export function orgRoutes(deps: Deps): Router {
     res.json({ data: list.map(out) });
   });
 
+  /** Branch names for pickers, for any member of staff (codes and names only). */
+  r.get('/lookup/branches', async (req, res) => {
+    const a = req.actor!;
+    const filter = isBranchBound(a.scope) && a.scope !== 'assigned-patient' ? { tenantId: a.tenantId, _id: { $in: a.branchId ? [a.branchId] : [] } } : { tenantId: a.tenantId, status: { $ne: 'Archived' } };
+    const list = await a.db!.collection('branches').find(filter, { projection: { code: 1, name: 1, timezone: 1 } }).sort({ code: 1 }).limit(500).toArray();
+    res.json({ data: list.map((b) => ({ id: b._id.toHexString(), code: b.code, name: b.name, timezone: b.timezone })) });
+  });
+
   r.post('/branches', need(deps, 'org', 'E'), async (req, res) => {
     await assertBranch(deps, req, null); // creating a branch is hospital-wide work
     const body = parse(CreateBranch, req.body);

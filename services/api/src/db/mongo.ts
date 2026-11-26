@@ -99,6 +99,13 @@ export class Data {
       db.collection('telehealth_sessions').createIndex({ tenantId: 1, clinicianId: 1, startsAt: 1 }),
       db.collection('telehealth_sessions').createIndex({ tenantId: 1, patientId: 1, startsAt: -1 }),
       db.collection('telehealth_sessions').createIndex({ tenantId: 1, branchId: 1, startsAt: 1 }),
+      db.collection('portal_threads').createIndex({ tenantId: 1, patientId: 1, lastAt: -1 }),
+      db.collection('portal_threads').createIndex({ tenantId: 1, status: 1, awaiting: 1, lastAt: -1 }),
+      db.collection('users').createIndex({ tenantId: 1, patientIds: 1 }, { sparse: true }),
+      // Spec §5.10: one open critical-care stay per admission.
+      db.collection('critical_care_stays').createIndex({ tenantId: 1, admissionId: 1 }, { unique: true, partialFilterExpression: { openLock: true }, name: 'one_open_stay_per_admission' }),
+      db.collection('critical_care_stays').createIndex({ tenantId: 1, branchId: 1, status: 1 }),
+      db.collection('sterilization_batches').createIndex({ tenantId: 1, branchId: 1, loadedAt: -1 }),
       db.collection('ipc_cases').createIndex({ tenantId: 1, status: 1, onsetDate: -1 }),
       db.collection('vehicles').createIndex({ tenantId: 1, branchId: 1, code: 1 }, { unique: true }),
       db.collection('referrals').createIndex({ tenantId: 1, branchId: 1, status: 1, createdAt: -1 }),

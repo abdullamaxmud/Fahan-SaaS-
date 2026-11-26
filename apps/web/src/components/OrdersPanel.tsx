@@ -15,6 +15,7 @@ interface LabOrder {
   status: string;
   results: { analyteCode: string; name: string; value: number | string; unit: string | null; flag: string }[];
   critical: { analytes: string[]; acknowledgedAt: string | null } | null;
+  sharedWithPatient: { byName: string } | null;
 }
 interface ImgOrder {
   id: string;
@@ -24,6 +25,7 @@ interface ImgOrder {
   report: { impression: string; findings: string; preliminary: boolean } | null;
   critical: { finding: string; acknowledgedAt: string | null } | null;
   studyInstanceUid: string | null;
+  sharedWithPatient: { byName: string } | null;
 }
 interface Rx {
   id: string;
@@ -121,6 +123,15 @@ export function OrdersPanel({ encounterId, closed, canOrder, canChart }: { encou
                     {t('Acknowledge critical value', 'Aqbal qiimaha khatarta')}
                   </button>
                 ) : null}
+                {o.status === 'Released' ? (
+                  o.sharedWithPatient ? (
+                    <Pill tone="acc">{t('Shared with patient', 'Bukaanka waa la wadaagay')}</Pill>
+                  ) : canOrder ? (
+                    <button className="btn h-7 px-2 text-xs" onClick={() => run(() => api(`/portal-share/lab/${o.id}`, { body: {} }))}>
+                      {t('Share with patient', 'La wadaag bukaanka')}
+                    </button>
+                  ) : null
+                ) : null}
               </div>
               {o.results.length ? (
                 <div className="mt-1 flex flex-wrap gap-1.5">
@@ -180,6 +191,15 @@ export function OrdersPanel({ encounterId, closed, canOrder, canChart }: { encou
                   <button className="btn h-7 border-crit/40 px-2 text-xs text-crit" onClick={() => run(() => api(`/radiology/orders/${o.id}/acknowledge`, { body: {} }))}>
                     {t('Acknowledge critical finding', 'Aqbal')}
                   </button>
+                ) : null}
+                {o.status === 'Final' ? (
+                  o.sharedWithPatient ? (
+                    <Pill tone="acc">{t('Shared with patient', 'Bukaanka waa la wadaagay')}</Pill>
+                  ) : canOrder ? (
+                    <button className="btn h-7 px-2 text-xs" onClick={() => run(() => api(`/portal-share/imaging/${o.id}`, { body: {} }))}>
+                      {t('Share with patient', 'La wadaag bukaanka')}
+                    </button>
+                  ) : null
                 ) : null}
               </div>
               {o.report ? (

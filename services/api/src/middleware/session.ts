@@ -1,7 +1,9 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { ObjectId } from 'mongodb';
 import { effectivePermissions, effectiveScope, requiresMfa } from '@fahan/policy';
 import type { Actor, Deps, SessionDoc } from '../context';
 import { sha256 } from '../lib/crypto';
+import { disabledModules } from '../modules/settings/features';
 import { Errors } from '../lib/errors';
 
 export const SESSION_COOKIE = 'fahan_sid';
@@ -68,6 +70,8 @@ async function buildActor(data: Deps['data'], s: SessionDoc): Promise<{ actor: A
     tenantName: tenant.name,
     db,
     branchId: u.branchId ?? undefined,
+    patientIds: (u.patientIds as ObjectId[] | undefined) ?? undefined,
+    disabledModules: await disabledModules(db),
   };
   return { actor, mfaEnrolled: Boolean(u.mfa?.secret) };
 }

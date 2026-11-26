@@ -74,7 +74,7 @@ export const ROLES: readonly RoleDef[] = [
   r('hospital-admin', 2, 'Hospital Administrator', 'admin', 'hospital', 'org:E iam:E studio:V bi:V aifin:V ai360:V hr:V qual:V sec:V', 'Runs departments, users and services within their own grant ceiling.', true),
   r('branch-manager', 2, 'Branch Manager', 'admin', 'branch', 'org:E iam:V appt:V bed:V bi:V hr:V inv:V eq:V', 'Manages one branch: hours, capacity, staff coverage.', true),
   r('designer', 2, 'Workflow & Form Designer', 'module:studio', 'hospital', 'studio:E org:V', 'Builds no-code forms and workflows. Nothing publishes without approval.', true),
-  r('reception', 3, 'Reception & Registration', 'reception', 'branch', 'mpi:E appt:E adm:V amb:V bill:V portal:V', 'Registers patients and runs queues. Demographics only.'),
+  r('reception', 3, 'Reception & Registration', 'reception', 'branch', 'mpi:E appt:E adm:V amb:V bill:V portal:E', 'Registers patients and runs queues. Demographics only.'),
   r('admission-officer', 3, 'Admission Officer', 'reception', 'branch', 'adm:E bed:E mpi:V appt:V ins:V', 'Reserves beds and opens admissions.'),
   r('records-officer', 3, 'Medical Records Officer', 'module:mpi', 'hospital', 'mpi:A appt:V', 'Verifies identities and approves patient merges. Merges link records and can be reversed.', true),
   r('physician', 4, 'Physician / Specialist', 'clinical', 'assigned-patient', 'mpi:V appt:V opd:S adm:E nur:V sx:E tele:S lab:E rad:E dx:E bb:E rx:S', 'Signs notes, diagnoses and prescriptions for assigned patients.', true),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { Brand } from '@/components/Brand';
@@ -13,13 +13,20 @@ export default function AcceptInvitePage() {
   const [form, setForm] = useState({ tenant: '', token: '', password: '', confirm: '' });
   const { busy, error, setError, run } = useAction();
   const fe = fieldErrors(error);
+  // Links from the hospital carry the hospital and invitation codes, so people only choose a password.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const tenant = q.get('tenant') ?? '';
+    const token = q.get('code') ?? '';
+    if (tenant || token) setForm((f) => ({ ...f, tenant, token }));
+  }, []);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (form.password !== form.confirm) return setError(new Error('mismatch'));
     const r = await run(() => api('/auth/accept-invite', { body: { tenant: form.tenant.trim().toLowerCase(), token: form.token.trim(), password: form.password } }));
-    if (r) router.replace('/login');
+    if (r) router.replace(`/login?tenant=${encodeURIComponent(form.tenant.trim().toLowerCase())}`);
   }
 
   return (

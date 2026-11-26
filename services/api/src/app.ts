@@ -21,6 +21,7 @@ import { emergencyRoutes } from './modules/emergency/routes';
 import { encounterRoutes, timelineRoutes } from './modules/encounters/routes';
 import { equipmentRoutes } from './modules/equipment/routes';
 import { iamRoutes } from './modules/iam/routes';
+import { icuRoutes } from './modules/icu/routes';
 import { DIAGNOSTICS, RADIOLOGY, imagingRoutes } from './modules/imaging/routes';
 import { insuranceRoutes } from './modules/insurance/routes';
 import { fhirRoutes } from './modules/fhir/routes';
@@ -31,6 +32,7 @@ import { intelRoutes } from './modules/intel/routes';
 import { inventoryRoutes } from './modules/inventory/routes';
 import { migrationRoutes } from './modules/migrations/routes';
 import { securityRoutes } from './modules/security/routes';
+import { settingsRoutes } from './modules/settings/routes';
 import { studioRoutes } from './modules/studio/routes';
 import { procurementRoutes } from './modules/procurement/routes';
 import { qualityRoutes } from './modules/quality/routes';
@@ -40,6 +42,7 @@ import { nursingRoutes } from './modules/nursing/routes';
 import { orgRoutes } from './modules/org/routes';
 import { patientRoutes } from './modules/patients/routes';
 import { pharmacyRoutes } from './modules/pharmacy/routes';
+import { portalFence, portalRoutes } from './modules/portal/routes';
 import { platformRoutes } from './modules/platform/routes';
 import { referralRoutes } from './modules/referrals/routes';
 import { surgeryRoutes } from './modules/surgery/routes';
@@ -102,7 +105,11 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   // Everything below belongs to a hospital workspace and runs against that tenant's own database.
   const tenant = Router();
   tenant.use(requireAuth(), requireTenant);
+  // Patients and caregivers reach only the portal; the rest of the hospital API is closed to them.
+  tenant.use(portalFence(deps));
+  tenant.use('/', portalRoutes(deps));
   tenant.use('/', orgRoutes(deps));
+  tenant.use('/', settingsRoutes(deps));
   tenant.use('/', iamRoutes(deps));
   tenant.use('/patients', patientRoutes(deps));
   tenant.use('/patients', timelineRoutes(deps));
@@ -131,6 +138,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/security', securityRoutes(deps));
   tenant.use('/quality', qualityRoutes(deps));
   tenant.use('/telemedicine', teleRoutes(deps));
+  tenant.use('/icu', icuRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

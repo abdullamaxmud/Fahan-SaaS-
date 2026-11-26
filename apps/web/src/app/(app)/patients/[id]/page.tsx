@@ -9,6 +9,7 @@ import { canDo, useMe } from '@/lib/session';
 import { PatientBand, fullName, type PatientBrief } from '@/components/clinical';
 import { Card, ErrorNote, Field, Pill, statusTone, useAction } from '@/components/ui';
 import { useReauth } from '@/components/Reauth';
+import { PortalAccess } from '@/components/PortalAccess';
 
 interface Patient extends PatientBrief {
   phone: string | null;
@@ -233,6 +234,8 @@ export default function PatientPage({ params }: { params: Promise<{ id: string }
               <dd>{fullName(p.names)}</dd>
             </dl>
           </Card>
+
+          {canDo(me, 'mpi', 'V') && me.scope !== 'assigned-patient' ? <PortalAccess patientId={id} /> : null}
 
           <Card title={t('Consent', 'Oggolaanshaha')}>
             <ul className="grid px-4 pb-2 text-[13px]">

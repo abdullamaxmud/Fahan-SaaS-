@@ -79,6 +79,7 @@ export function labRoutes(deps: Deps): Router {
     results: showResults ? (o.results ?? []) : [],
     amended: Boolean(o.history?.length),
     critical: o.critical ?? null,
+    sharedWithPatient: o.sharedWithPatient ? { at: o.sharedWithPatient.at, byName: o.sharedWithPatient.byName } : null,
   });
 
   // ---- catalogue ----

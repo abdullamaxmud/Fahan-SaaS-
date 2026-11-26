@@ -204,6 +204,8 @@ export function authRoutes(deps: Deps): Router {
         perms: a.perms,
         scope: a.scope,
         branchId: a.branchId?.toHexString() ?? null,
+        patientIds: a.patientIds?.map((p) => p.toHexString()) ?? [],
+        disabledModules: a.disabledModules ?? [],
         tenant: a.tenantId ? { id: a.tenantId.toHexString(), slug: a.tenantSlug, name: a.tenantName } : null,
         mfa: req.session!.mfaState,
         csrfToken: req.session!.csrf,

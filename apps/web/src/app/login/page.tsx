@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { ErrorNote, Field, useAction } from '@/components/ui';
@@ -14,13 +14,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { busy, error, run } = useAction();
+  // Remember the hospital code so people type only their email and password next time.
+  useEffect(() => {
+    try {
+      const fromLink = new URLSearchParams(window.location.search).get('tenant');
+      setTenant(fromLink ?? localStorage.getItem('fahan-tenant') ?? '');
+    } catch {}
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const r = await run(() =>
       api<{ mfa: string }>('/auth/login', { body: { email, password, ...(tenant.trim() ? { tenant: tenant.trim().toLowerCase() } : {}) } }),
     );
-    if (r) router.replace(r.mfa === 'ok' ? '/' : '/mfa');
+    if (r) {
+      try {
+        localStorage.setItem('fahan-tenant', tenant.trim().toLowerCase());
+      } catch {}
+      router.replace(r.mfa === 'ok' ? '/' : '/mfa');
+    }
   }
 
   return (

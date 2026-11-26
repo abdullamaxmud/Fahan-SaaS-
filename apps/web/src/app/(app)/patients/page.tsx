@@ -62,7 +62,7 @@ function Patients() {
     void search(urlQ);
   }, [urlQ, search]);
   useEffect(() => {
-    if (canRegister) api<Branch[]>('/branches').then((b) => {
+    if (canRegister) api<Branch[]>('/lookup/branches').then((b) => {
       setBranches(b);
       setBranchId((x) => x || b[0]?.id || '');
     }).catch(() => {});

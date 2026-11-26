@@ -20,12 +20,13 @@ const InviteUser = z.object({
 });
 const SetRoles = z.object({ roles: roleList, branchId: objectId.optional(), version: z.number().int().positive() });
 
-const PUBLIC = { email: 1, name: 1, roles: 1, status: 1, branchId: 1, createdAt: 1, activatedAt: 1, version: 1, 'mfa.enrolledAt': 1 } as const;
-const out = ({ _id, branchId, mfa, ...u }: Record<string, any>) => ({
+const PUBLIC = { email: 1, name: 1, roles: 1, status: 1, branchId: 1, createdAt: 1, activatedAt: 1, version: 1, 'mfa.enrolledAt': 1, 'mfaReset.requestedByName': 1, 'mfaReset.requestedAt': 1, 'mfaReset.reason': 1 } as const;
+const out = ({ _id, branchId, mfa, mfaReset, ...u }: Record<string, any>) => ({
   id: _id.toHexString(),
   ...u,
   branchId: branchId?.toHexString() ?? null,
   mfaEnrolled: Boolean(mfa?.enrolledAt),
+  mfaReset: mfaReset ? { requestedByName: mfaReset.requestedByName, requestedAt: mfaReset.requestedAt, reason: mfaReset.reason } : null,
 });
 
 /** Spec §5.2 Identity, roles & permissions. Invited → Active → Suspended → Deactivated. */
@@ -56,7 +57,7 @@ export function iamRoutes(deps: Deps): Router {
   async function loadTarget(req: Request) {
     const id = idParam(req.params.id, 'User');
     if (id.equals(req.actor!.userId)) throw Errors.forbidden('You cannot change your own access. Ask another administrator');
-    const u = await users(req).findOne({ _id: id, tenantId: req.actor!.tenantId, ...branchFilter(req) });
+    const u = await users(req).findOne({ _id: id, tenantId: req.actor!.tenantId, roles: { $nin: ['patient', 'caregiver'] }, ...branchFilter(req) });
     if (!u) throw Errors.notFound('User');
     checkCeiling(req, u.roles as string[]); // cannot manage someone more privileged than yourself
     return u;
@@ -68,7 +69,7 @@ export function iamRoutes(deps: Deps): Router {
 
   r.get('/users', need(deps, 'iam', 'V'), async (req, res) => {
     const list = await users(req)
-      .find({ tenantId: req.actor!.tenantId, ...branchFilter(req) }, { projection: PUBLIC })
+      .find({ tenantId: req.actor!.tenantId, roles: { $nin: ['patient', 'caregiver'] }, ...branchFilter(req) }, { projection: PUBLIC })
       .sort({ name: 1 })
       .limit(1000)
       .toArray();
@@ -143,6 +144,48 @@ export function iamRoutes(deps: Deps): Router {
       res.json({ data: out(upd) });
     });
   }
+
+  /** A new invitation code for someone who has not activated yet (the old code stops working). */
+  r.post('/users/:id/reinvite', need(deps, 'iam', 'E'), requireRecentMfa(deps), async (req, res) => {
+    const target = await loadTarget(req);
+    if (target.status !== 'Invited') throw Errors.conflict('INVALID_TRANSITION', 'Only people who have not activated yet get a new invitation');
+    const token = newToken();
+    const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
+    await users(req).updateOne({ _id: target._id }, { $set: { invite: { tokenHash: sha256(token), expiresAt } }, $inc: { version: 1 } });
+    await audit(deps, req, { action: 'iam.user.reinvite', resource: `user:${target._id.toHexString()}`, outcome: 'success' });
+    res.json({ data: { invite: { token, expiresAt: expiresAt.toISOString() } } });
+  });
+
+  /**
+   * Spec §3.3: MFA resets with dual control. One administrator asks, a different one approves;
+   * only then is the authenticator removed and every session of that person ended.
+   */
+  r.post('/users/:id/mfa-reset', need(deps, 'iam', 'E'), requireRecentMfa(deps), async (req, res) => {
+    const { reason } = parse(z.object({ reason: z.string().trim().min(3).max(300) }), req.body);
+    const target = await loadTarget(req);
+    if (!target.mfa?.secret) throw Errors.conflict('MFA_NOT_ENROLLED', 'This person has no authenticator to reset');
+    if (target.mfaReset) throw Errors.conflict('RESET_PENDING', 'A reset is already waiting for approval');
+    await users(req).updateOne({ _id: target._id }, { $set: { mfaReset: { requestedBy: req.actor!.userId, requestedByName: req.actor!.name, requestedAt: new Date(), reason } } });
+    await audit(deps, req, { action: 'iam.mfa_reset.request', resource: `user:${target._id.toHexString()}`, outcome: 'success', meta: { reason } });
+    res.status(201).json({ data: { pending: true } });
+  });
+
+  r.post('/users/:id/mfa-reset/approve', need(deps, 'iam', 'E'), requireRecentMfa(deps), async (req, res) => {
+    const target = await loadTarget(req);
+    if (!target.mfaReset) throw Errors.conflict('NO_RESET', 'No reset is waiting for approval');
+    if ((target.mfaReset.requestedBy as ObjectId).equals(req.actor!.userId)) throw new AppError(403, 'FOUR_EYES', 'A different administrator must approve this reset');
+    await users(req).updateOne({ _id: target._id }, { $unset: { mfa: '', mfaReset: '' }, $inc: { version: 1 } });
+    await deps.data.control().collection('sessions').deleteMany({ userId: target._id });
+    await audit(deps, req, { action: 'iam.mfa_reset.approve', resource: `user:${target._id.toHexString()}`, outcome: 'success' });
+    res.json({ data: { reset: true } });
+  });
+
+  r.post('/users/:id/mfa-reset/cancel', need(deps, 'iam', 'E'), async (req, res) => {
+    const target = await loadTarget(req);
+    await users(req).updateOne({ _id: target._id }, { $unset: { mfaReset: '' } });
+    await audit(deps, req, { action: 'iam.mfa_reset.cancel', resource: `user:${target._id.toHexString()}`, outcome: 'success' });
+    res.json({ data: { cancelled: true } });
+  });
 
   return r;
 }

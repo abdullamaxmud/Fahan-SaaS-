@@ -29,6 +29,9 @@ export function need(deps: Deps, module: ModuleKey, level: Level): RequestHandle
   return async (req, _res, next) => {
     const a = req.actor;
     if (!a) return next(Errors.unauthenticated());
+    if (a.disabledModules?.includes(module)) {
+      await deny(deps, req, module, 'module switched off for this hospital');
+    }
     if (!can(a.perms, module, level)) {
       await deny(deps, req, module, `requires ${module}:${level}`);
     }

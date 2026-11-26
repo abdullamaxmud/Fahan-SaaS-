@@ -132,5 +132,117 @@ export function equipmentRoutes(deps: Deps): Router {
     res.json({ data: { id: id(j), result: body.result, assetStatus: set.status ?? x.status } });
   });
 
+  // ---- CSSD: sterilisation loads (spec §5.24) ----
+  // Loaded → Running → Passed / Failed → Released (or Recalled). Only a passed load with both indicators read is released;
+  // a failed load is never released, and a released load can be recalled with every set listed for tracing.
+  const NewBatch = z.object({
+    autoclaveId: objectId,
+    program: z.enum(['134C-4min', '121C-20min', 'low-temp-plasma', 'flash']),
+    items: z.array(z.object({ set: z.string().trim().min(2).max(80), qty: z.number().int().min(1).max(200) })).min(1).max(60),
+  });
+  const Result = z.object({ chemical: z.enum(['pass', 'fail']), biological: z.enum(['pass', 'fail']), note: z.string().trim().max(500).optional() });
+  const batchView = (b: Document) => ({
+    id: id(b as { _id: ObjectId }),
+    number: b.number,
+    autoclave: b.autoclaveCode,
+    program: b.program,
+    items: b.items,
+    status: b.status,
+    chemical: b.chemical ?? null,
+    biological: b.biological ?? null,
+    loadedAt: b.loadedAt,
+    loadedByName: b.loadedByName,
+    startedAt: b.startedAt ?? null,
+    resultAt: b.resultAt ?? null,
+    releasedAt: b.releasedAt ?? null,
+    releasedByName: b.releasedByName ?? null,
+    recallReason: b.recallReason ?? null,
+  });
+  async function batch(req: Request) {
+    const b = await db(req).collection('sterilization_batches').findOne({ _id: idParam(req.params.id, 'Load'), tenantId: req.actor!.tenantId });
+    if (!b) throw Errors.notFound('Load');
+    await assertBranch(deps, req, b.branchId);
+    return b;
+  }
+
+  r.get('/cssd/batches', need(deps, 'eq', 'V'), async (req, res) => {
+    const a = req.actor!;
+    const f: Document = { tenantId: a.tenantId };
+    if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
+    const list = await db(req).collection('sterilization_batches').find(f).sort({ loadedAt: -1 }).limit(100).toArray();
+    res.json({ data: list.map(batchView) });
+  });
+
+  r.post('/cssd/batches', need(deps, 'eq', 'E'), async (req, res) => {
+    const body = parse(NewBatch, req.body);
+    const a = req.actor!;
+    const x = await asset(req, body.autoclaveId);
+    if (x.kind !== 'autoclave') throw Errors.validation([{ path: 'autoclaveId', message: 'Choose a steriliser' }]);
+    const ok = assetUsable(x, today());
+    if (!ok.ok) throw new AppError(409, 'DEVICE_UNAVAILABLE', ok.reason ?? 'This steriliser cannot be used');
+    const running = await db(req).collection('sterilization_batches').findOne({ tenantId: a.tenantId, autoclaveId: x._id, status: { $in: ['Loaded', 'Running'] } });
+    if (running) throw Errors.conflict('STERILISER_BUSY', `${x.code} already has load ${running.number} in progress`);
+    const c = await db(req)
+      .collection<{ _id: string; seq: number }>('counters')
+      .findOneAndUpdate({ _id: `cssd:${today().slice(0, 4)}` }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: 'after' });
+    const number = `ST-${today().slice(2, 4)}-${String(c!.seq).padStart(5, '0')}`;
+    const ins = await db(req).collection('sterilization_batches').insertOne({
+      tenantId: a.tenantId,
+      branchId: x.branchId,
+      number,
+      autoclaveId: x._id,
+      autoclaveCode: x.code,
+      program: body.program,
+      items: body.items,
+      status: 'Loaded',
+      loadedAt: new Date(),
+      loadedBy: a.userId,
+      loadedByName: a.name,
+    });
+    await audit(deps, req, { action: 'cssd.load', resource: `cssd:${ins.insertedId.toHexString()}`, outcome: 'success', meta: { autoclave: x.code, sets: body.items.length } });
+    res.status(201).json({ data: { id: ins.insertedId.toHexString(), number, status: 'Loaded' } });
+  });
+
+  r.post('/cssd/batches/:id/start', need(deps, 'eq', 'E'), async (req, res) => {
+    const b = await batch(req);
+    const upd = await db(req).collection('sterilization_batches').updateOne({ _id: b._id, status: 'Loaded' }, { $set: { status: 'Running', startedAt: new Date() } });
+    if (!upd.modifiedCount) throw Errors.conflict('INVALID_TRANSITION', `Load is ${String(b.status).toLowerCase()}`);
+    await audit(deps, req, { action: 'cssd.start', resource: `cssd:${id(b)}`, outcome: 'success' });
+    res.json({ data: { id: id(b), status: 'Running' } });
+  });
+
+  r.post('/cssd/batches/:id/result', need(deps, 'eq', 'E'), async (req, res) => {
+    const body = parse(Result, req.body);
+    const b = await batch(req);
+    const passed = body.chemical === 'pass' && body.biological === 'pass';
+    const status = passed ? 'Passed' : 'Failed';
+    const upd = await db(req)
+      .collection('sterilization_batches')
+      .updateOne({ _id: b._id, status: 'Running' }, { $set: { status, chemical: body.chemical, biological: body.biological, resultNote: body.note, resultAt: new Date(), resultBy: req.actor!.userId } });
+    if (!upd.modifiedCount) throw Errors.conflict('INVALID_TRANSITION', 'Start the cycle before recording the result');
+    await audit(deps, req, { action: `cssd.${status.toLowerCase()}`, resource: `cssd:${id(b)}`, outcome: 'success', meta: { chemical: body.chemical, biological: body.biological } });
+    res.json({ data: { id: id(b), status } });
+  });
+
+  r.post('/cssd/batches/:id/release', need(deps, 'eq', 'E'), async (req, res) => {
+    const b = await batch(req);
+    if (b.status === 'Failed') throw new AppError(409, 'LOAD_FAILED', 'A failed load is never released. Reprocess the sets in a new load');
+    const upd = await db(req)
+      .collection('sterilization_batches')
+      .updateOne({ _id: b._id, status: 'Passed' }, { $set: { status: 'Released', releasedAt: new Date(), releasedBy: req.actor!.userId, releasedByName: req.actor!.name } });
+    if (!upd.modifiedCount) throw Errors.conflict('INVALID_TRANSITION', `Load is ${String(b.status).toLowerCase()}`);
+    await audit(deps, req, { action: 'cssd.release', resource: `cssd:${id(b)}`, outcome: 'success' });
+    res.json({ data: { id: id(b), status: 'Released' } });
+  });
+
+  r.post('/cssd/batches/:id/recall', need(deps, 'eq', 'A'), async (req, res) => {
+    const { reason } = parse(Reason, req.body);
+    const b = await batch(req);
+    const upd = await db(req).collection('sterilization_batches').updateOne({ _id: b._id, status: 'Released' }, { $set: { status: 'Recalled', recallReason: reason, recalledAt: new Date(), recalledBy: req.actor!.userId } });
+    if (!upd.modifiedCount) throw Errors.conflict('INVALID_TRANSITION', 'Only a released load can be recalled');
+    await audit(deps, req, { action: 'cssd.recall', resource: `cssd:${id(b)}`, outcome: 'success', meta: { reason } });
+    res.json({ data: { id: id(b), status: 'Recalled', sets: b.items } });
+  });
+
   return r;
 }

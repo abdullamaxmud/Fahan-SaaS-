@@ -34,7 +34,7 @@ export const NAV: NavGroup[] = [
       i('/patients', 'Patients', 'Bukaanka', 'users', ['mpi']),
       i('/appointments', 'Appointments', 'Ballamaha', 'calendar-clock', ['appt']),
       { ...i('/telemedicine', 'Video visits', 'Booqasho fiidiyow', 'video', ['tele']), alt: ['appt', 'E'] },
-      i('/messages', 'Patient messages', 'Fariimaha bukaanka', 'messages-square', ['portal']),
+      { ...i('/messages', 'Patient messages', 'Fariimaha bukaanka', 'messages-square', []), alt: ['portal', 'E'] },
     ],
   },
   {
@@ -117,7 +117,7 @@ export function navFor(perms: Permissions, opts: { platform: boolean; ownPatient
     ...g,
     items: g.items.filter(
       (x) =>
-        (x.any.some((m) => perms[m] && !off.has(m)) || (x.alt && can(perms, x.alt[0], x.alt[1]) && !off.has(x.any[0]!))) &&
+        (x.any.some((m) => perms[m] && !off.has(m)) || (x.alt && can(perms, x.alt[0], x.alt[1]) && !off.has(x.any[0] ?? x.alt[0]))) &&
         (!opts.platform || PLATFORM_PAGES.has(x.href)) &&
         !(x.staffOnly && opts.ownPatients),
     ),
