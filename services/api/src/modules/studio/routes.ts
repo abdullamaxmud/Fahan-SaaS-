@@ -154,7 +154,7 @@ export function studioRoutes(deps: Deps): Router {
   });
 
   r.post('/forms/:id/test', need(deps, 'studio', 'E'), async (req, res) => {
-    const { sample } = parse(z.object({ sample: z.record(z.unknown()) }), req.body);
+    const { sample } = parse(z.object({ sample: z.record(z.string(), z.unknown()) }), req.body);
     const f = await load(req);
     if (!['Draft', 'Tested'].includes(f.status)) throw Errors.conflict('INVALID_TRANSITION', `Form is ${String(f.status).toLowerCase()}`);
     const { errors } = validateData(f.fields, sample);
@@ -228,7 +228,7 @@ export function studioRoutes(deps: Deps): Router {
   });
 
   r.post('/forms/by-key/:key/submissions', async (req, res) => {
-    const body = parse(z.object({ patientId: objectId.optional(), data: z.record(z.unknown()) }), req.body);
+    const body = parse(z.object({ patientId: objectId.optional(), data: z.record(z.string(), z.unknown()) }), req.body);
     const f = await current(req, String(req.params.key));
     const a = req.actor!;
     if (!can(a.perms, f.module, 'E')) await deny(deps, req, `form:${f.key}`, `submitting needs ${f.module}:E`);

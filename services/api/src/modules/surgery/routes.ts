@@ -34,7 +34,7 @@ const NewCase = z.object({
   admissionId: objectId.optional(),
 });
 const Consent = z.object({ method: z.enum(['written', 'verbal-witnessed']), signedBy: z.enum(['patient', 'guardian']), witnessName: z.string().trim().min(2).max(80).optional(), risksExplained: z.literal(true) });
-const Checklist = z.object({ items: z.record(z.boolean()) });
+const Checklist = z.object({ items: z.record(z.string(), z.boolean()) });
 const Advance = z.object({ to: z.enum(['Prepared', 'InProcedure', 'Recovery', 'Completed']) });
 const OpNote = z.object({
   text: z.string().trim().min(20).max(20_000),

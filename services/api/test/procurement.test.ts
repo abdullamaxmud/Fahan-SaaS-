@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { setupHospital, type Hospital } from './fixtures';
 import { startHarness, type Harness } from './helpers';
 
-/** Spec §5.16 / §6 procure-to-pay: approved order → goods receipt → 3-way matched invoice → payment, all on the ledger. */
+/** Spec §5.23 / §6 procure-to-pay: approved order → goods receipt → 3-way matched invoice → payment, all on the ledger. */
 let h: Harness;
 let H: Hospital;
 const clock = new Date('2030-05-06T08:00:00Z');

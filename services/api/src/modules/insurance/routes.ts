@@ -39,7 +39,7 @@ const Remit = z.object({ amountMinor: minor, reference: z.string().trim().min(3)
 const id = (x: { _id: ObjectId }) => x._id.toHexString();
 
 /**
- * Spec §5.20 insurance & claims. Submitting moves the claimed amount from patient to insurer receivable and holds it on
+ * Spec §5.21 insurance & claims. Submitting moves the claimed amount from patient to insurer receivable and holds it on
  * the invoice; a denial gives it back to the patient; remittance settles it; a short payment is written off with a reason.
  */
 export function insuranceRoutes(deps: Deps): Router {
@@ -301,7 +301,7 @@ export function insuranceRoutes(deps: Deps): Router {
     res.json({ data: { id: id(c), status: 'Settled', remittedMinor: body.amountMinor, writtenOffMinor: short } });
   });
 
-  /** Spec §5.20 reports: open insurer receivable by age, and denials by reason. */
+  /** Spec §5.21 reports: open insurer receivable by age, and denials by reason. */
   r.get('/reports/ageing', need(deps, 'ins', 'V'), async (req, res) => {
     const list = await db(req).collection('claims').find({ tenantId: req.actor!.tenantId, status: { $in: ['Submitted', 'Accepted'] } }).toArray();
     const t = new Date(`${today()}T00:00:00Z`).getTime();

@@ -1,11 +1,21 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from 'next/font/google';
+import localFont from 'next/font/local';
 import { LangProvider } from '@/lib/i18n';
 import './globals.css';
 
-const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', weight: ['500', '700', '800'] });
-const body = Instrument_Sans({ subsets: ['latin'], variable: '--font-body' });
-const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight: ['400', '500', '600'] });
+// Fonts are self-hosted (OFL, see src/fonts/LICENSE-*): no call to an outside font service at build time or when
+// a page loads, so builds work offline and patients' browsers are not reported to a third party.
+const display = localFont({ src: '../fonts/bricolage-grotesque-latin-wght-normal.woff2', variable: '--font-display', weight: '200 800', display: 'swap' });
+const body = localFont({ src: '../fonts/instrument-sans-latin-wght-normal.woff2', variable: '--font-body', weight: '400 700', display: 'swap' });
+const mono = localFont({
+  src: [
+    { path: '../fonts/ibm-plex-mono-latin-400-normal.woff2', weight: '400' },
+    { path: '../fonts/ibm-plex-mono-latin-500-normal.woff2', weight: '500' },
+    { path: '../fonts/ibm-plex-mono-latin-600-normal.woff2', weight: '600' },
+  ],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = { title: 'Fahan', description: 'Hospital operating platform' };
 

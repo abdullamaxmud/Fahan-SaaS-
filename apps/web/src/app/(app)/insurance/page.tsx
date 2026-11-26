@@ -73,7 +73,7 @@ export default function InsurancePage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.20" title={t('Insurance & claims', 'Caymiska & sheegashooyinka')}>
+      <PageHeader eyebrow="Spec §5.21" title={t('Insurance & claims', 'Caymiska & sheegashooyinka')}>
         {t(
           'A submitted claim moves the insurer’s share off the patient’s bill. Whatever the payer will not pay goes back to the patient; a short payment is written off with a reason.',
           'Sheegasho la gudbiyay waxay qaybta caymiska ka saartaa biilka bukaanka.',

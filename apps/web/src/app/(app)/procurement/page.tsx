@@ -77,7 +77,7 @@ export default function ProcurementPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.16" title={t('Procurement', 'Iibsiga')}>
+      <PageHeader eyebrow="Spec §5.23" title={t('Procurement', 'Iibsiga')}>
         {t('Order → approval by someone else → delivery into stock → supplier invoice matched to order and delivery → payment by finance.', 'Dalab → oggolaansho → keenis → biilka alaab-qeybiyaha → lacag bixin.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />

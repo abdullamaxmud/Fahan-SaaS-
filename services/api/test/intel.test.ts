@@ -35,6 +35,8 @@ beforeAll(async () => {
     if (i < 5) dxIds[`ca40-${i}`] = (await doc.post(`/encounters/${enc}/diagnoses`, { code: 'CA40', display: 'Pneumonia', certainty: 'suspected' })).body.data.id;
     if (i < 2) await doc.post(`/encounters/${enc}/diagnoses`, { code: 'BA00', display: 'Essential hypertension', certainty: 'confirmed' });
   }
+  // A ruled-out condition is never counted, as confirmed or as suspected (spec §14.2).
+  await doc.post(`/encounters/${encs[5]}/diagnoses`, { code: 'CA40', display: 'Pneumonia', certainty: 'ruled_out' });
   // The first patient comes back: a second confirmed visit is one more encounter, not one more patient.
   const again = (await rc.post('/appointments/walk-in', { patientId: pids[0], providerId: H.staff.doctor!.id, reason: 'Fever again' })).body.data.encounterId;
   await doc.post(`/encounters/${again}/diagnoses`, { code: '1F40', display: 'Malaria due to Plasmodium falciparum', certainty: 'confirmed', primary: true });
@@ -65,7 +67,7 @@ describe('metric definitions', () => {
 });
 
 describe('disease snapshot (spec §9.3)', () => {
-  it('counts unique patients, separates suspected, and suppresses small cohorts', async () => {
+  it('counts unique patients, separates suspected, excludes ruled-out, and suppresses small cohorts', async () => {
     const r = await H.staff.analyst!.c.post('/intel/snapshots', { kind: 'disease', period });
     expect(r.status, JSON.stringify(r.body)).toBe(201);
     disease = { id: r.body.data.id, hash: r.body.data.hash };

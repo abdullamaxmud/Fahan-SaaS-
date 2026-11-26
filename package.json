@@ -1,7 +1,7 @@
 {
   "name": "fahan",
   "private": true,
-  "description": "Fahan — multi-tenant SaaS hospital operating platform",
+  "description": "Fahan \u2014 multi-tenant SaaS hospital operating platform",
   "workspaces": [
     "packages/*",
     "services/*",
@@ -19,5 +19,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "postcss": "8.5.33"
   }
 }

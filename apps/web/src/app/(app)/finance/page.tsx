@@ -89,7 +89,7 @@ export default function FinancePage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.21 · §9.4" title={t('Finance & ledger', 'Maaliyadda & buugga')}>
+      <PageHeader eyebrow="Spec §5.20 · §9.4" title={t('Finance & ledger', 'Maaliyadda & buugga')}>
         {t('Billed, recognised and collected are different numbers and are never mixed. Postings are corrected by reversal, never edited.', 'Biilka, dakhliga iyo lacagta la ururiyay waa tirooyin kala duwan.')}
       </PageHeader>
       <div className="flex flex-wrap items-end gap-2">

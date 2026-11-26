@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { setupHospital, type Hospital } from './fixtures';
 import { startHarness, type Harness } from './helpers';
 
-/** Spec §5.20: payers, policies, claims Draft → Submitted → Accepted/Rejected → Settled, AR transfers, denials. */
+/** Spec §5.21: payers, policies, claims Draft → Submitted → Accepted/Rejected → Settled, AR transfers, denials. */
 let h: Harness;
 let H: Hospital;
 const clock = new Date('2030-04-10T08:00:00Z');

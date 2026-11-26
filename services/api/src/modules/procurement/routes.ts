@@ -12,7 +12,7 @@ import { assertRecentMfa } from '../../middleware/session';
 import { CURRENCIES, postEntry, type Currency } from '../accounting/ledger';
 import { receiveLot } from '../inventory/stock';
 
-/** Spec §5.16 approval limits: orders above this need the finance director (proc:A); below, a procurement supervisor (proc:S). */
+/** Spec §5.23 approval limits: orders above this need the finance director (proc:A); below, a procurement supervisor (proc:S). */
 export const PO_SUPERVISOR_LIMIT_MINOR = 50_000;
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
@@ -43,7 +43,7 @@ const Reason = z.object({ reason: z.string().trim().min(5).max(300) });
 const id = (x: { _id: ObjectId }) => x._id.toHexString();
 
 /**
- * Spec §5.16 procurement and §6 procure-to-pay: requisition → approved order → goods receipt → supplier invoice
+ * Spec §5.23 procurement and §6 procure-to-pay: requisition → approved order → goods receipt → supplier invoice
  * (3-way match) → payment. Receipt: Dr inventory / Cr goods received not invoiced. Invoice: Dr GRNI / Cr payables.
  */
 export function procurementRoutes(deps: Deps): Router {
