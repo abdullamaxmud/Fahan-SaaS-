@@ -7,6 +7,7 @@ import type { Deps } from '../../context';
 import { decrypt } from '../../lib/crypto';
 import { localDate } from '../../lib/time';
 import { CURRENCIES } from '../accounting/ledger';
+import { metrics } from '../../ops/metrics';
 import { applyPayment } from './service';
 
 /** Spec §8.1 / §12.1: provider callbacks are signed, fresh (5 minutes), and idempotent by provider transaction id. */
@@ -101,7 +102,10 @@ export function paymentWebhookRoutes(deps: Deps): Router {
         outcome = { status: 'applied', receiptNo: p.receiptNo };
       });
     } catch (e) {
-      if ((e as { code?: number }).code === 11000) return res.json({ data: { duplicate: true } });
+      if ((e as { code?: number }).code === 11000) {
+        metrics.webhookDuplicates.inc({ provider: String(cfg.provider) });
+        return res.json({ data: { duplicate: true } });
+      }
       throw e;
     } finally {
       await s.endSession();

@@ -2,6 +2,7 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { randomUUID } from 'node:crypto';
 import type { Logger } from 'pino';
 import { AppError, Errors } from '../lib/errors';
+import { metrics } from '../ops/metrics';
 
 export const correlation: RequestHandler = (req, res, next) => {
   const incoming = req.get('x-correlation-id');
@@ -23,6 +24,7 @@ export function errorHandler(log: Logger): ErrorRequestHandler {
       log.error({ err, correlationId: req.correlationId }, 'unhandled error');
       e = new AppError(500, 'INTERNAL', 'Something went wrong on our side. Quote the correlation id if you contact support.');
     }
+    metrics.errors.inc({ code: e.code });
     res.status(e.status).json({ error: { code: e.code, message: e.message, correlationId: req.correlationId, details: e.details, ...e.extra } });
   };
 }

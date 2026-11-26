@@ -1,4 +1,5 @@
 import type { Db } from 'mongodb';
+import { metrics } from '../ops/metrics';
 import { canonicalJson, sha256, stripUndefined } from '../lib/crypto';
 
 export type AuditOutcome = 'success' | 'failure' | 'allow' | 'deny';
@@ -24,6 +25,7 @@ const COL = 'audit_events';
  * `seq` stops two writers from forking the chain; the loser retries on the new head.
  */
 export async function writeAudit(db: Db, input: AuditInput): Promise<void> {
+  metrics.audit.inc({ action: input.action, outcome: input.outcome });
   const col = db.collection(COL);
   for (let attempt = 0; attempt < 25; attempt++) {
     const last = await col.find({}, { projection: { seq: 1, hash: 1 } }).sort({ seq: -1 }).limit(1).next();

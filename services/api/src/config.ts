@@ -9,6 +9,7 @@ const Env = z.object({
   BACKUP_KEY: z.string().optional(),
   SESSION_TTL_HOURS: z.coerce.number().positive().default(12),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),
+  METRICS_TOKEN: z.string().min(24).optional(),
 });
 
 export interface Config {
@@ -23,6 +24,8 @@ export interface Config {
   cookieSecure: boolean;
   /** How recently MFA must have been confirmed for sensitive changes (spec §3.4 re-authentication). */
   reauthWindowMs: number;
+  /** Bearer token for /metrics (spec §13.4). Unset means the endpoint is off. */
+  metricsToken?: string;
   /** Injectable clock for scheduling rules (tests pin it). */
   now: () => Date;
 }
@@ -58,6 +61,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     sessionTtlMs: e.SESSION_TTL_HOURS * 3_600_000,
     cookieSecure: e.COOKIE_SECURE ? e.COOKIE_SECURE === 'true' : e.NODE_ENV === 'production',
     reauthWindowMs: 10 * 60_000,
+    metricsToken: e.METRICS_TOKEN,
     now: () => new Date(),
   };
 }

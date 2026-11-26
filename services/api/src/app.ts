@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import cookieParser from 'cookie-parser';
 import express, { Router } from 'express';
 import helmet from 'helmet';
@@ -10,6 +11,7 @@ import { accountingRoutes } from './modules/accounting/routes';
 import { admissionRoutes } from './modules/admissions/routes';
 import { billingRoutes } from './modules/billing/routes';
 import { paymentWebhookRoutes } from './modules/billing/webhook';
+import { renderMetrics, requestMetrics } from './ops/metrics';
 import { appointmentRoutes } from './modules/appointments/routes';
 import { auditRoutes } from './modules/audit/routes';
 import { bloodBankRoutes } from './modules/bloodbank/routes';
@@ -45,6 +47,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   app.set('trust proxy', 1);
   app.use(helmet());
   app.use(correlation);
+  app.use(requestMetrics);
   if (deps.config.env !== 'test') {
     app.use(
       pinoHttp({
@@ -58,6 +61,25 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   app.use('/api/v1/webhooks/payments', paymentWebhookRoutes(deps));
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
+
+  // Readiness (spec §13.4): only take traffic when the database answers.
+  app.get('/health/ready', async (_req, res) => {
+    try {
+      await deps.data.control().command({ ping: 1 });
+      res.json({ status: 'ready', db: 'ok' });
+    } catch {
+      res.status(503).json({ status: 'not-ready', db: 'unreachable' });
+    }
+  });
+
+  /** Prometheus metrics, only with the configured bearer token; off when no token is set. */
+  app.get('/metrics', (req, res, next) => {
+    const t = deps.config.metricsToken;
+    const given = req.get('authorization')?.replace(/^Bearer /, '') ?? '';
+    if (!t) return next();
+    if (given.length !== t.length || !timingSafeEqual(Buffer.from(given), Buffer.from(t))) return res.status(401).json({ error: { code: 'UNAUTHENTICATED', message: 'Metrics need the monitoring token', correlationId: req.correlationId } });
+    res.type('text/plain; version=0.0.4').send(renderMetrics());
+  });
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
