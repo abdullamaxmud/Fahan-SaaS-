@@ -21,7 +21,9 @@ import { equipmentRoutes } from './modules/equipment/routes';
 import { iamRoutes } from './modules/iam/routes';
 import { DIAGNOSTICS, RADIOLOGY, imagingRoutes } from './modules/imaging/routes';
 import { insuranceRoutes } from './modules/insurance/routes';
+import { fhirRoutes } from './modules/fhir/routes';
 import { hrRoutes } from './modules/hr/routes';
+import { integrationRoutes } from './modules/integrations/routes';
 import { intelRoutes } from './modules/intel/routes';
 import { inventoryRoutes } from './modules/inventory/routes';
 import { studioRoutes } from './modules/studio/routes';
@@ -60,6 +62,9 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
     res.json({ status: 'ok' });
   });
 
+  // FHIR facade (spec §12.1): API clients with bearer tokens, outside the cookie session and CSRF guard.
+  app.use('/api/v1/fhir/:tenant', fhirRoutes(deps));
+
   const api = Router();
   api.use(loadSession(deps));
   api.use(csrfGuard);
@@ -93,6 +98,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/hr', hrRoutes(deps));
   tenant.use('/intel', intelRoutes(deps));
   tenant.use('/studio', studioRoutes(deps));
+  tenant.use('/integrations', integrationRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

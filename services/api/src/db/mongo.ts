@@ -148,12 +148,12 @@ export class Data {
       // A provider transaction is applied once, however often the provider retries.
       db.collection('payment_events').createIndex({ tenantId: 1, provider: 1, transactionId: 1 }, { unique: true, name: 'one_event_per_transaction' }),
       db.collection('payment_events').createIndex({ tenantId: 1, status: 1, receivedAt: -1 }),
-      // Insurance (spec §5.20): one open claim per invoice.
+      // Insurance (spec §5.21): one open claim per invoice.
       db.collection('payers').createIndex({ tenantId: 1, code: 1 }, { unique: true }),
       db.collection('policies').createIndex({ tenantId: 1, patientId: 1 }),
       db.collection('claims').createIndex({ tenantId: 1, invoiceId: 1 }, { unique: true, partialFilterExpression: { open: true }, name: 'one_open_claim' }),
       db.collection('claims').createIndex({ tenantId: 1, status: 1, createdAt: -1 }),
-      // Procurement (spec §5.16): a supplier's invoice number is recorded once.
+      // Procurement (spec §5.23): a supplier's invoice number is recorded once.
       db.collection('suppliers').createIndex({ tenantId: 1, code: 1 }, { unique: true }),
       db.collection('purchase_orders').createIndex({ tenantId: 1, number: 1 }, { unique: true }),
       db.collection('purchase_orders').createIndex({ tenantId: 1, status: 1, createdAt: -1 }),
@@ -176,6 +176,10 @@ export class Data {
       db.collection('form_definitions').createIndex({ tenantId: 1, key: 1, version: 1 }, { unique: true }),
       db.collection('form_definitions').createIndex({ tenantId: 1, key: 1 }, { unique: true, partialFilterExpression: { status: 'Published' }, name: 'one_published_version' }),
       db.collection('form_submissions').createIndex({ tenantId: 1, formKey: 1, submittedAt: -1 }),
+      // Integrations (spec §5.34): hashed client secrets; tokens expire on their own.
+      db.collection('api_clients').createIndex({ tenantId: 1, clientId: 1 }, { unique: true }),
+      db.collection('api_tokens').createIndex({ tokenHash: 1 }, { unique: true }),
+      db.collection('api_tokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
