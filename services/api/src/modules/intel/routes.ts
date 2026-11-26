@@ -9,6 +9,7 @@ import { audit } from '../../middleware/audit';
 import { deny } from '../../middleware/authorize';
 import { CURRENCIES, type Currency } from '../accounting/ledger';
 import { METRICS, SUPPRESSION_THRESHOLD, hospitalTz, metricDef } from './metrics';
+import { h360Routes } from './h360';
 import { insightRoutes } from './insights';
 import { assertKind, canSee, captureSnapshot, snapshotView, verifySnapshot, type SnapshotKind } from './snapshots';
 
@@ -28,6 +29,7 @@ export function intelRoutes(deps: Deps): Router {
   const r = Router();
   const db = (req: Request) => req.actor!.db!;
   r.use('/insights', insightRoutes(deps));
+  r.use('/h360', h360Routes(deps));
 
   async function anyIntel(req: Request) {
     const p = req.actor!.perms as never;
