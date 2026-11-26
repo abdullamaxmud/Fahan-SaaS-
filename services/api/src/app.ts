@@ -43,6 +43,7 @@ import { pharmacyRoutes } from './modules/pharmacy/routes';
 import { platformRoutes } from './modules/platform/routes';
 import { referralRoutes } from './modules/referrals/routes';
 import { surgeryRoutes } from './modules/surgery/routes';
+import { teleRoutes } from './modules/telemedicine/routes';
 
 export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.env === 'test' ? 'silent' : 'info' })) {
   const app = express();
@@ -129,6 +130,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/migrations', migrationRoutes(deps));
   tenant.use('/security', securityRoutes(deps));
   tenant.use('/quality', qualityRoutes(deps));
+  tenant.use('/telemedicine', teleRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

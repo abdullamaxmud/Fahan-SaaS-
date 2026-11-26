@@ -1,4 +1,4 @@
-import type { ModuleKey, Permissions } from '@fahan/policy';
+import { can, type Level, type ModuleKey, type Permissions } from '@fahan/policy';
 
 export interface NavItem {
   href: string;
@@ -9,6 +9,8 @@ export interface NavItem {
   any: ModuleKey[];
   /** Hidden for people whose access is limited to their own patients (worklists are for department staff). */
   staffOnly?: boolean;
+  /** Also shown with this module at this level (e.g. reception books video visits through appointments). */
+  alt?: [ModuleKey, Level];
 }
 export interface NavGroup {
   en: string;
@@ -31,7 +33,7 @@ export const NAV: NavGroup[] = [
     items: [
       i('/patients', 'Patients', 'Bukaanka', 'users', ['mpi']),
       i('/appointments', 'Appointments', 'Ballamaha', 'calendar-clock', ['appt']),
-      i('/telemedicine', 'Video visits', 'Booqasho fiidiyow', 'video', ['tele']),
+      { ...i('/telemedicine', 'Video visits', 'Booqasho fiidiyow', 'video', ['tele']), alt: ['appt', 'E'] },
       i('/messages', 'Patient messages', 'Fariimaha bukaanka', 'messages-square', ['portal']),
     ],
   },
@@ -115,7 +117,7 @@ export function navFor(perms: Permissions, opts: { platform: boolean; ownPatient
     ...g,
     items: g.items.filter(
       (x) =>
-        x.any.some((m) => perms[m] && !off.has(m)) &&
+        (x.any.some((m) => perms[m] && !off.has(m)) || (x.alt && can(perms, x.alt[0], x.alt[1]) && !off.has(x.any[0]!))) &&
         (!opts.platform || PLATFORM_PAGES.has(x.href)) &&
         !(x.staffOnly && opts.ownPatients),
     ),

@@ -108,11 +108,15 @@ export function patientRoutes(deps: Deps): Router {
       const term = q.q;
       const digits = term.replace(/\D/g, '');
       if (/^[A-Z0-9]{2,12}-\d{2}-\d{6}$/i.test(term)) filter.mrn = term.toUpperCase();
+      else if (/^[A-Z0-9]{2,12}-[\d-]*$/i.test(term)) filter.mrn = new RegExp(`^${term.toUpperCase().replace(/[^A-Z0-9-]/g, '')}`);
       else if (digits.length >= 6 && digits.length === term.replace(/[\s+()-]/g, '').length) filter.phone = normalizePhone(term);
       else {
         const keys = nameKeys(term);
         if (!keys.length) return res.json({ data: [] });
-        filter.nameKeys = { $all: keys };
+        // Whole words match exactly; the word still being typed matches as a prefix ("Faa" finds Faadumo).
+        const last = keys[keys.length - 1]!;
+        const typing = /\S$/.test(term);
+        filter.nameKeys = { $all: typing ? [...keys.slice(0, -1), new RegExp(`^${last.replace(/[^a-z0-9]/gi, '')}`)] : keys };
       }
     }
     const list = await col(req).find(filter).sort({ createdAt: -1 }).limit(q.limit).toArray();

@@ -10,6 +10,7 @@ const Env = z.object({
   SESSION_TTL_HOURS: z.coerce.number().positive().default(12),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),
   METRICS_TOKEN: z.string().min(24).optional(),
+  TELE_BASE_URL: z.string().url().default('https://meet.jit.si'),
 });
 
 export interface Config {
@@ -26,6 +27,8 @@ export interface Config {
   reauthWindowMs: number;
   /** Bearer token for /metrics (spec §13.4). Unset means the endpoint is off. */
   metricsToken?: string;
+  /** Video service that hosts telemedicine rooms (spec §5.27). Each visit gets an unguessable room name. */
+  teleBaseUrl: string;
   /** Injectable clock for scheduling rules (tests pin it). */
   now: () => Date;
 }
@@ -58,6 +61,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     controlDb: e.CONTROL_DB,
     dataKey,
     backupKey,
+    teleBaseUrl: e.TELE_BASE_URL.replace(/\/+$/, ''),
     sessionTtlMs: e.SESSION_TTL_HOURS * 3_600_000,
     cookieSecure: e.COOKIE_SECURE ? e.COOKIE_SECURE === 'true' : e.NODE_ENV === 'production',
     reauthWindowMs: 10 * 60_000,
