@@ -64,8 +64,8 @@ export default function LabPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.11" title={t('Laboratory', 'Shaybaarka')}>
-        {t('STAT first, then oldest. Results reach the doctor only after a second person verifies and releases them.', 'STAT marka hore. Natiijada waxaa sii daaya qof labaad.')}
+      <PageHeader title={t('Laboratory', 'Shaybaarka')}>
+        {t('Samples, results and verification — urgent first.', 'Muunadaha, natiijooyinka iyo xaqiijinta.')}
       </PageHeader>
       {criticals.length ? (
         <div className="grid gap-1 rounded-[12px] bg-crit-soft px-4 py-3 text-[13px] text-crit">

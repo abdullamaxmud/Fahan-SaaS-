@@ -63,8 +63,8 @@ export default function InventoryPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.15" title={t('Inventory', 'Kaydka')}>
-        {t('Stock is counted by batch and expiry. It never goes below zero.', 'Kaydka waxaa lagu tiriyaa dufcad iyo dhicitaan.')}
+      <PageHeader title={t('Inventory', 'Kaydka')}>
+        {t('Stock by store, batch and expiry date.', 'Kaydka bakhaar, dufcad iyo taariikh dhicitaan.')}
       </PageHeader>
       <div className="flex flex-wrap gap-1.5" role="tablist">
         {stores.map((s) => (

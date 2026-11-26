@@ -55,8 +55,8 @@ export default function MergesPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §4.1" title={t('Merge requests', 'Codsiyada isku-darka')}>
-        {t('A merge links two records of the same person. It needs a second person to approve it and can be reversed.', 'Isku-darku wuxuu u baahan yahay qof labaad oo ansixiya.')}
+      <PageHeader title={t('Merge requests', 'Codsiyada isku-darka')}>
+        {t('Join two records of the same person. A second person approves.', 'Isku xir laba diiwaan oo isku qof ah. Qof labaad ayaa ansixiya.')}
       </PageHeader>
       <ErrorNote error={load.error ?? act.error} />
       <Card>

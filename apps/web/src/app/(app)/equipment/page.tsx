@@ -40,8 +40,8 @@ export default function EquipmentPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.24" title={t('Equipment', 'Qalabka')}>
-        {t('A device out of service or overdue for calibration cannot be booked for an exam.', 'Qalab aan shaqeyn lama ballansan karo.')}
+      <PageHeader title={t('Equipment', 'Qalabka')}>
+        {t('Devices, maintenance and sterilisation.', 'Qalabka, dayactirka iyo nadiifinta.')}
       </PageHeader>
       <ErrorNote error={load.error ?? act.error} />
       <Card>

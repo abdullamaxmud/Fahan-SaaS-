@@ -41,8 +41,8 @@ export default function BreakGlassPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §3.4" title={t('Emergency access review', 'Dib-u-eegista gelitaanka degdegga')}>
-        {t('Every break-glass use is reviewed after the fact. Reviewing also ends any access still open.', 'Gelitaan kasta oo degdeg ah waa la eegaa.')}
+      <PageHeader title={t('Emergency access review', 'Dib-u-eegista gelitaanka degdegga')}>
+        {t('Check every emergency opening of a record.', 'Hubi gelitaan degdeg ah oo kasta.')}
       </PageHeader>
       <div className="flex self-start overflow-hidden rounded-[9px] border border-line" role="tablist">
         {(['pending', 'reviewed'] as const).map((x) => (

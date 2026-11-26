@@ -95,11 +95,8 @@ export default function BillingPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.19" title={t('Billing & cashier', 'Biilasha & khasnajiga')}>
-        {t(
-          'Charges arrive from the lab, imaging, pharmacy and closed visits. Every payment needs an open till for cash and posts to the ledger once.',
-          'Kharashyadu waxay ka yimaadaan shaybaarka, sawirada, farmashiyaha iyo booqashooyinka la xiray.',
-        )}
+      <PageHeader title={t('Billing & cashier', 'Biilasha & khasnajiga')}>
+        {t('Invoices, payments and the cash till.', 'Biilasha, lacag-bixinta iyo khasnadda.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />
 

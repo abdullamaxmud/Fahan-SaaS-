@@ -59,8 +59,8 @@ export default function TenantsPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §3.1 · SaaS" title={t('Hospital tenants', 'Isbitaalada macaamiisha ah')}>
-        {t('Each hospital gets its own database. You see names and status here, never patient records.', 'Isbitaal kastaa wuxuu leeyahay xog-keyd u gaar ah.')}
+      <PageHeader title={t('Hospitals', 'Isbitaalada')}>
+        {t('Hospitals using Fahan. Patient records are never visible here.', 'Isbitaalada isticmaala Fahan.')}
       </PageHeader>
       <ErrorNote error={load.error} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

@@ -52,8 +52,8 @@ export default function BranchesPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.1" title={t('Branches & departments', 'Laamaha & waaxaha')}>
-        {t('Every record in Fahan belongs to a branch. Each branch keeps its own timezone for reports and schedules.', 'Diiwaan kasta wuxuu ka tirsan yahay laan.')}
+      <PageHeader title={t('Hospital setup', 'Habaynta isbitaalka')}>
+        {t('Branches, departments and services.', 'Laamaha, waaxaha iyo adeegyada.')}
       </PageHeader>
       <ErrorNote error={load.error} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

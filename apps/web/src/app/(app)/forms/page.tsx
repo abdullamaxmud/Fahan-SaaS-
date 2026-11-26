@@ -43,8 +43,8 @@ export default function MyFormsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.33" title={t('My forms', 'Foomamkayga')}>
-        {t('Forms your hospital has published for your role. Each answer is checked on the server and kept with the form version it was made on.', 'Foomamka cisbitaalku u daabacay doorkaaga.')}
+      <PageHeader title={t('My forms', 'Foomamkayga')}>
+        {t('Forms your hospital published for your role.', 'Foomamka loo daabacay doorkaaga.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />
       {!forms.length && !load.busy ? <p className="text-ink-3">{t('No forms have been published for your role yet.', 'Weli foom laguma daabicin doorkaaga.')}</p> : null}

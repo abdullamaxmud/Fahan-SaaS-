@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { GitMerge, Search, UserPlus } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
@@ -27,9 +28,19 @@ interface Branch {
 const EMPTY = { givenName: '', middleName: '', familyName: '', dob: '', sexAtBirth: '', phone: '', nationalId: '' };
 
 export default function PatientsPage() {
+  return (
+    <Suspense>
+      <Patients />
+    </Suspense>
+  );
+}
+
+function Patients() {
+  const params = useSearchParams();
+  const urlQ = params.get('q') ?? '';
   const { me } = useMe();
   const { t } = useLang();
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(urlQ);
   const [list, setList] = useState<PatientBrief[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [form, setForm] = useState(EMPTY);
@@ -47,7 +58,10 @@ export default function PatientsPage() {
     [],
   );
   useEffect(() => {
-    void search('');
+    setQ(urlQ);
+    void search(urlQ);
+  }, [urlQ, search]);
+  useEffect(() => {
     if (canRegister) api<Branch[]>('/branches').then((b) => {
       setBranches(b);
       setBranchId((x) => x || b[0]?.id || '');
@@ -100,8 +114,8 @@ export default function PatientsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.3" title={t('Patients', 'Bukaanka')}>
-        {t('Search by name (any spelling), MRN or phone. Each person has one record across all branches.', 'Ku raadi magac, MRN ama telefoon.')}
+      <PageHeader title={t('Patients', 'Bukaanka')}>
+        {t('Find a patient or register a new one.', 'Raadi bukaan ama diiwaangeli mid cusub.')}
       </PageHeader>
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card

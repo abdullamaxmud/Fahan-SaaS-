@@ -58,8 +58,8 @@ export default function BloodBankPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.18" title={t('Blood bank', 'Bangiga dhiigga')}>
-        {t('Crossmatch needs the patient’s group confirmed by two separate samples. Compatibility is checked for every unit.', 'Kooxda dhiigga waa in laba muunad xaqiijiyaan.')}
+      <PageHeader title={t('Blood bank', 'Bangiga dhiigga')}>
+        {t('Blood units, crossmatch and transfusions.', 'Dhiigga, isku-eegidda iyo ku-shubidda.')}
       </PageHeader>
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
         {GROUPS.map((g) => (

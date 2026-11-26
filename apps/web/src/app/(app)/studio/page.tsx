@@ -77,8 +77,8 @@ export default function StudioPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.33" title={t('Forms & workflow studio', 'Foomamka & socodka')}>
-        {t('Forms are built from safe field types only — no scripts. Every version is tested, approved by someone else (and by clinical safety if high-risk), then published. Old versions keep their submissions; publishing an old version rolls back.', 'Foomamka waxaa laga dhisaa noocyo ammaan ah oo keliya.')}
+      <PageHeader title={t('Forms studio', 'Foomamka')}>
+        {t('Build forms without code. Nothing goes live without approval.', 'Samee foomam koodh la’aan. Waxba ma shaqeeyaan ansixin la’aan.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)]">

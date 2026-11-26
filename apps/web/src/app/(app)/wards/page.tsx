@@ -90,8 +90,8 @@ export default function WardsPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.7 · §5.8" title={t('Wards & admissions', 'Qolalka & dhigista')}>
-        {t('Pick an admission, then click a free bed. Click a bed being cleaned to mark it ready.', 'Dooro dhigis, kadibna guji sariir bannaan.')}
+      <PageHeader title={t('Wards & beds', 'Qolalka & sariiraha')}>
+        {t('Pick an admission, then click a free bed.', 'Dooro dhigis, kadib guji sariir bannaan.')}
       </PageHeader>
       {pick ? (
         <div className="flex items-center gap-3 rounded-[10px] bg-info-soft px-4 py-2.5 text-[13px] text-info">

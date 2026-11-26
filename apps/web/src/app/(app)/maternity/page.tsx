@@ -38,8 +38,8 @@ export default function MaternityPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.17" title={t('Maternity', 'Umulaha')}>
-        {t('Active pregnancies by due date. Each live birth gets its own record linked to the mother.', 'Uurka socda, sida taariikhda dhalashada.')}
+      <PageHeader title={t('Maternity', 'Umulaha')}>
+        {t('Pregnancies, deliveries and newborns.', 'Uurka, dhalmada iyo dhallaanka.')}
       </PageHeader>
       <ErrorNote error={load.error ?? act.error} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

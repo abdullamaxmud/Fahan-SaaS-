@@ -11,6 +11,8 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem('fahan-lang');
       if (saved === 'so' || saved === 'en') setLangState(saved);
+      const theme = localStorage.getItem('fahan-theme');
+      if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
     } catch {}
   }, []);
   useEffect(() => {

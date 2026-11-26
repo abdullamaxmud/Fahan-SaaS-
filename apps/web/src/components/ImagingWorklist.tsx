@@ -29,7 +29,7 @@ interface Asset {
 }
 
 /** Shared worklist for radiology (§5.12) and diagnostics (§5.13). */
-export function ImagingWorklist({ base, spec, title, canReport, needsStudyUid }: { base: string; spec: string; title: string; canReport: boolean; needsStudyUid: boolean }) {
+export function ImagingWorklist({ base, title, canReport, needsStudyUid }: { base: string; title: string; canReport: boolean; needsStudyUid: boolean }) {
   const { t } = useLang();
   const [list, setList] = useState<Order[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -55,8 +55,8 @@ export function ImagingWorklist({ base, spec, title, canReport, needsStudyUid }:
   return (
     <>
       {dialog}
-      <PageHeader eyebrow={spec} title={title}>
-        {t('Only working, calibrated devices can be booked. Reports are visible to the doctor once signed.', 'Qalab shaqeynaya oo kaliya ayaa la ballansan karaa.')}
+      <PageHeader title={title}>
+        {t('Orders, scheduling and signed reports.', 'Dalabyada, jadwalka iyo warbixinnada.')}
       </PageHeader>
       <ErrorNote error={load.error ?? act.error} />
       <Card title={`${t('Worklist', 'Liiska shaqada')} · ${list.length}`}>

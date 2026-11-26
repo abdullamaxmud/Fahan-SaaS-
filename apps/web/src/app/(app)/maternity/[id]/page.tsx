@@ -62,7 +62,7 @@ export default function PregnancyPage({ params }: { params: Promise<{ id: string
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.17" title={t('Pregnancy record', 'Diiwaanka uurka')}>
+      <PageHeader title={t('Pregnancy record', 'Diiwaanka uurka')}>
         <span className="flex flex-wrap gap-2">
           <Pill tone={p.status === 'active' ? 'info' : 'ok'}>{p.status}</Pill>
           <span>

@@ -60,11 +60,8 @@ export default function ReportsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.29" title={t('Reports & BI', 'Warbixinnada & BI')}>
-        {t(
-          'Each snapshot freezes one month’s certified figures with a fingerprint. Capturing again on unchanged data returns the same snapshot; corrections make a new version.',
-          'Sawir kasta wuxuu xafidaa tirooyinka bisha oo leh faraha-calaamad.',
-        )}
+      <PageHeader title={t('Reports', 'Warbixinnada')}>
+        {t('Each month’s certified figures.', 'Tirooyinka bil kasta ee la hubiyay.')}
       </PageHeader>
       <div className="flex flex-wrap gap-1.5" role="tablist">
         {kinds.map(([k, , label]) => (

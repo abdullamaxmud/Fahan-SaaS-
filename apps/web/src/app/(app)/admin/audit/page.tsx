@@ -45,8 +45,8 @@ export default function AuditPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.35" title={t('Audit trail', 'Raadraaca hubinta')}>
-        {t('Every sign-in, change and refused request is written here. Each entry is chained to the one before it, so any edit or deletion is detected.', 'Dhacdo kasta halkan ayaa lagu qoraa.')}
+      <PageHeader title={t('Audit trail', 'Raadraaca hubinta')}>
+        {t('Every sign-in and change, in order.', 'Galitaan iyo isbeddel kasta, sida ay u dhaceen.')}
       </PageHeader>
       <ErrorNote error={load.error} />
       {!isPlatform ? (

@@ -37,8 +37,8 @@ export default function SurgeryPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.16" title={t('Operating theatres', 'Qolalka qalliinka')}>
-        {t('Each case moves forward only when its consent and WHO safety checklist steps are complete.', 'Kiis kastaa wuxuu socdaa marka liiska badbaadada la dhammeeyo.')}
+      <PageHeader title={t('Theatres', 'Qalliinka')}>
+        {t('Theatre schedule and surgical cases.', 'Jadwalka qolalka qalliinka iyo kiisaska.')}
       </PageHeader>
       <input className="input h-9 w-auto self-start" type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date" />
       <ErrorNote error={load.error} />

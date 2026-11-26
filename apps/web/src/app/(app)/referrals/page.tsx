@@ -55,7 +55,7 @@ export default function ReferralsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.25" title={t('Referrals & ambulance', 'Gudbinta & ambalaas')}>
+      <PageHeader title={t('Referrals & ambulance', 'Gudbinta & ambalaas')}>
         {me.scope === 'own-record'
           ? t('Referrals you sent and their status.', 'Gudbinta aad dirtay iyo xaaladdooda.')
           : t('A vehicle can only be on one run. Handover links the referral to the receiving emergency visit.', 'Gaari wuxuu qaadi karaa hal safar.')}

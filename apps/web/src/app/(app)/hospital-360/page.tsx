@@ -107,8 +107,8 @@ export default function Hospital360Page() {
     <>
       {dialog}
       <div className="print:hidden">
-        <PageHeader eyebrow="Spec §5.32 · §9.5" title={t('Monthly Hospital 360 report', 'Warbixinta bishii 360')}>
-          {t('Built from certified snapshots; finance and clinical reviewers sign their sections, the owner approves, and the published version is signed and never edited.', 'Waxaa laga dhisay sawirada la hubiyay; dib-u-eegayaashu way saxiixaan.')}
+        <PageHeader title={t('Monthly report', 'Warbixinta bisha')}>
+          {t('The signed monthly report for leadership.', 'Warbixinta bisha ee saxiixan.')}
         </PageHeader>
       </div>
       <ErrorNote error={load.error ?? act.error} />

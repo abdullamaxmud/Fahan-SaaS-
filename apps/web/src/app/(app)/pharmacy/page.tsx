@@ -68,8 +68,8 @@ export default function PharmacyPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.14" title={t('Pharmacy', 'Farmashiyaha')}>
-        {t('Verify, then dispense from the batch that expires first. A repeated click never dispenses twice.', 'Xaqiiji, kadib bixi.')}
+      <PageHeader title={t('Pharmacy', 'Farmashiyaha')}>
+        {t('Verify and dispense prescriptions.', 'Xaqiiji oo bixi daawooyinka.')}
       </PageHeader>
       <div className="flex items-center gap-2 self-start">
         <span className="text-[13px] text-ink-2">{t('Dispense from', 'Laga bixinayo')}</span>

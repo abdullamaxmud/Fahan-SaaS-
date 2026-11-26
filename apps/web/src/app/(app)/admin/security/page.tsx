@@ -52,8 +52,8 @@ export default function SecurityPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.35 · §11.1" title={t('Access reviews & security incidents', 'Dib-u-eegista gelitaanka & dhacdooyinka')}>
-        {t('Every account is certified or revoked by someone other than its owner. Incidents are confidential to security roles and move from detected to closed with the fix and root cause written down.', 'Akoon kasta waxaa xaqiijiya qof kale.')}
+      <PageHeader title={t('Security', 'Amniga')}>
+        {t('Access reviews and security incidents.', 'Dib-u-eegista gelitaanka iyo dhacdooyinka amniga.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />
 

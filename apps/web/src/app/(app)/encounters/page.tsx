@@ -29,8 +29,8 @@ export default function EncountersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.5" title={t('Outpatient visits', 'Booqashooyinka')}>
-        {t('Visits you are part of. Open one to record vitals, notes and diagnoses.', 'Booqashooyinka aad ka mid tahay.')}
+      <PageHeader title={t('Visits', 'Booqashooyinka')}>
+        {t('Open a visit to record vitals, notes and diagnoses.', 'Fur booqasho si aad u qorto calaamadaha, qoraallada iyo ogaanshaha.')}
       </PageHeader>
       <div className="flex overflow-hidden rounded-[9px] border border-line self-start" role="tablist">
         {(['active', 'closed'] as const).map((x) => (

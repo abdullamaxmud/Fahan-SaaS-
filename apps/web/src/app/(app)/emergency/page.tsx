@@ -77,8 +77,8 @@ export default function EmergencyPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.6" title={t('Emergency department', 'Qaybta gurmadka')}>
-        {t('Sorted by triage level, then by arrival. The board refreshes every 30 seconds.', 'Waxaa lagu kala horreysiiyay heerka kala-saarka.')}
+      <PageHeader title={t('Emergency', 'Gurmadka')}>
+        {t('Live board, most urgent first.', 'Liiska tooska ah, kan ugu degdegsan marka hore.')}
       </PageHeader>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
         {[1, 2, 3, 4, 5].map((n) => (

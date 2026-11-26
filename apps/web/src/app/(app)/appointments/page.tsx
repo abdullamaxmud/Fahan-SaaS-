@@ -102,8 +102,8 @@ export default function AppointmentsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Spec §5.4" title={t('Appointments', 'Ballamaha')}>
-        {t('One slot, one patient. Check-in gives a queue number and opens the visit for the clinician.', 'Hal waqti, hal bukaan.')}
+      <PageHeader title={t('Appointments', 'Ballamaha')}>
+        {t('Book, check in and run the queue.', 'Qabso ballan, diiwaangeli imaanshaha, maamul safka.')}
       </PageHeader>
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn h-9 w-9 justify-center p-0" onClick={() => setDate(shift(date, -1))} aria-label="Previous day">

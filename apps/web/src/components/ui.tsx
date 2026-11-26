@@ -43,12 +43,52 @@ export function Card({ title, actions, children }: { title?: string; actions?: R
   );
 }
 
-export function PageHeader({ eyebrow, title, children }: { eyebrow: string; title: string; children?: React.ReactNode }) {
+/** Page title with a one-line subtitle and optional actions on the right. */
+export function PageHeader({ title, children, actions }: { eyebrow?: string; title: string; children?: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      <span className="eyebrow">{eyebrow}</span>
-      <h1 className="text-[clamp(26px,3.2vw,36px)] font-extrabold leading-tight">{title}</h1>
-      {children ? <div className="max-w-[72ch] text-ink-2">{children}</div> : null}
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h1 className="text-[clamp(22px,2.4vw,28px)] font-extrabold leading-tight">{title}</h1>
+        {children ? <div className="max-w-[72ch] text-[13.5px] text-ink-3">{children}</div> : null}
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </div>
+  );
+}
+
+/** Big number with a label, used on home and module overviews. */
+export function Stat({ label, value, hint, tone }: { label: string; value: React.ReactNode; hint?: React.ReactNode; tone?: 'crit' | 'warn' | 'ok' }) {
+  const color = tone === 'crit' ? 'text-crit' : tone === 'warn' ? 'text-warn' : tone === 'ok' ? 'text-ok' : 'text-ink';
+  return (
+    <div className="card flex flex-col gap-1 p-4">
+      <span className="text-[12.5px] font-medium text-ink-3">{label}</span>
+      <b className={`num font-display text-[28px] font-extrabold leading-none ${color}`}>{value}</b>
+      {hint ? <span className="text-[12px] text-ink-3">{hint}</span> : null}
+    </div>
+  );
+}
+
+/** Friendly empty state for lists. */
+export function Empty({ children }: { children: React.ReactNode }) {
+  return <div className="px-4 py-10 text-center text-[13.5px] text-ink-3">{children}</div>;
+}
+
+/** Simple segmented tabs. */
+export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: { id: T; label: string; count?: number }[] }) {
+  return (
+    <div className="flex max-w-full self-start overflow-x-auto rounded-[10px] border border-line bg-surface p-0.5" role="tablist">
+      {items.map((x) => (
+        <button
+          key={x.id}
+          role="tab"
+          aria-selected={value === x.id}
+          onClick={() => onChange(x.id)}
+          className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[8px] px-3 text-[13px] font-semibold ${value === x.id ? 'bg-accent-soft text-accent-2' : 'text-ink-2 hover:text-ink'}`}
+        >
+          {x.label}
+          {x.count ? <span className="rounded-full bg-surface-3 px-1.5 text-[11px] text-ink-2">{x.count}</span> : null}
+        </button>
+      ))}
     </div>
   );
 }

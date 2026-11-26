@@ -76,8 +76,8 @@ export default function HrPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.22" title={t('People, rosters & payroll', 'Shaqaalaha, jadwalka & mushaharka')}>
-        {t('Pay is visible only to HR and finance administrators. HR prepares the payroll; finance approves and pays it.', 'Mushaharka waxaa arki kara HR iyo maamulka maaliyadda oo keliya.')}
+      <PageHeader title={t('Staff & payroll', 'Shaqaalaha & mushaharka')}>
+        {t('Staff, rosters, leave and payroll.', 'Shaqaalaha, jadwalka, fasaxa iyo mushaharka.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />
       {note ? <p className="rounded-[10px] bg-ok-soft px-3 py-2 text-[13px] text-ok">{note}</p> : null}

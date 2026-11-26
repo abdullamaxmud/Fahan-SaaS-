@@ -24,6 +24,7 @@ import { iamRoutes } from './modules/iam/routes';
 import { DIAGNOSTICS, RADIOLOGY, imagingRoutes } from './modules/imaging/routes';
 import { insuranceRoutes } from './modules/insurance/routes';
 import { fhirRoutes } from './modules/fhir/routes';
+import { homeRoutes } from './modules/home/routes';
 import { hrRoutes } from './modules/hr/routes';
 import { integrationRoutes } from './modules/integrations/routes';
 import { intelRoutes } from './modules/intel/routes';
@@ -94,6 +95,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   api.use(csrfGuard);
   api.use('/auth', authRoutes(deps));
   api.use('/platform', requireAuth(), requirePlatform, platformRoutes(deps));
+  api.use('/home', requireAuth(), homeRoutes(deps));
 
   // Everything below belongs to a hospital workspace and runs against that tenant's own database.
   const tenant = Router();

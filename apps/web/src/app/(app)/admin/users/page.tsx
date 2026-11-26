@@ -89,8 +89,8 @@ export default function UsersPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.2" title={t('Users & roles', 'Isticmaalayaasha & doorarka')}>
-        {t('Access is denied by default. Each person gets roles; roles carry permissions. Changes apply on the next request, even to people already signed in.', 'Gelitaanku waa la diidaa haddii aan la oggolaan.')}
+      <PageHeader title={t('Users & roles', 'Isticmaalayaasha & doorarka')}>
+        {t('Invite staff and choose what each person can do.', 'Casuun shaqaalaha oo dooro waxa qof walba samayn karo.')}
       </PageHeader>
       <ErrorNote error={load.error} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

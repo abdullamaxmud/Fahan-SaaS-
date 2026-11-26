@@ -89,8 +89,8 @@ export default function FinancePage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.20 · §9.4" title={t('Finance & ledger', 'Maaliyadda & buugga')}>
-        {t('Billed, recognised and collected are different numbers and are never mixed. Postings are corrected by reversal, never edited.', 'Biilka, dakhliga iyo lacagta la ururiyay waa tirooyin kala duwan.')}
+      <PageHeader title={t('Finance', 'Maaliyadda')}>
+        {t('Ledger, journals and month-end close.', 'Buugga xisaabta, qoraallada iyo xiritaanka bisha.')}
       </PageHeader>
       <div className="flex flex-wrap items-end gap-2">
         <Field label={t('Month', 'Bisha')}>

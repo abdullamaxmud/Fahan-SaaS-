@@ -85,11 +85,8 @@ export default function ImportPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Phase 7 · data migration" title={t('Import patients from a legacy system', 'Ka soo dhoofi bukaanka nidaamkii hore')}>
-        {t(
-          'Upload the legacy list as CSV (legacy_id, given_name, middle_name, family_name, dob, sex, phone). A dry run checks every row and finds likely duplicates without writing anything; a second records officer commits; the result is reconciled by count and fingerprint and can be rolled back while unused.',
-          'Soo geli liiska CSV; tijaabo ayaa la sameeyaa; sarkaal kale ayaa xaqiijiya.',
-        )}
+      <PageHeader title={t('Import patients', 'Soo guuri bukaanka')}>
+        {t('Bring a patient list over from an old system.', 'Ka soo guuri liiska bukaanka nidaamkii hore.')}
       </PageHeader>
       <ErrorNote error={load.error ?? act.error} />
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,2fr)]">

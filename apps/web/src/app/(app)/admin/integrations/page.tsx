@@ -56,11 +56,8 @@ export default function IntegrationsPage() {
   return (
     <>
       {dialog}
-      <PageHeader eyebrow="Spec §5.34 · §12" title={t('Integrations & FHIR API', 'Isku-xirka & FHIR')}>
-        {t(
-          'Partner systems read FHIR R4 with their own credentials. A client is switched on only after its conformance test passes on this hospital’s data; suspending it revokes its tokens at once.',
-          'Nidaamyada kale waxay akhriyaan FHIR R4 iyagoo isticmaalaya aqoonsigooda.',
-        )}
+      <PageHeader title={t('Integrations', 'Isku-xirka')}>
+        {t('Partner systems that read hospital data.', 'Nidaamyada kale ee xogta akhriya.')}
       </PageHeader>
       <ErrorNote error={load.error ?? (Object.keys(fe).length ? null : act.error)} />
       {secret ? (

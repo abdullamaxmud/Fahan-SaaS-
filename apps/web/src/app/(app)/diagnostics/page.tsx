@@ -8,5 +8,5 @@ export default function DiagnosticsPage() {
   const { me } = useMe();
   const { t } = useLang();
   const specialist = canDo(me, 'dx', 'E') && (canDo(me, 'opd', 'S') || canDo(me, 'icu', 'S') || canDo(me, 'er', 'S'));
-  return <ImagingWorklist base="/diagnostics" spec="Spec §5.13" title={t('ECG, echo & endoscopy', 'ECG, echo & baaritaanno')} canReport={specialist} needsStudyUid={false} />;
+  return <ImagingWorklist base="/diagnostics" title={t('ECG, echo & endoscopy', 'ECG, echo & baaritaanno')} canReport={specialist} needsStudyUid={false} />;
 }

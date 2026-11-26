@@ -8,11 +8,8 @@ export default function AiDiseasePage() {
   const { t } = useLang();
   return (
     <>
-      <PageHeader eyebrow="Spec §5.31 · §9.3" title={t('AI disease intelligence', 'AI cudurrada')}>
-        {t(
-          'Confirmed diagnoses counted once per patient per month, suspected cases kept apart, groups under five patients hidden. These are this hospital’s records, not population prevalence.',
-          'Ogaanshaha la xaqiijiyay hal mar bukaan kasta; kuwa la tuhunsan yahay waa gooni; kooxaha yar waa la qariyay.',
-        )}
+      <PageHeader title={t('Disease insights', 'Falanqaynta cudurrada')}>
+        {t('Diagnosis trends from this hospital’s own records.', 'Isbeddelka cudurrada ee diiwaannada isbitaalka.')}
       </PageHeader>
       <InsightBoard kind="disease" />
     </>

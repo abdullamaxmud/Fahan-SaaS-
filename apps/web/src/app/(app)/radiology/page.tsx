@@ -7,5 +7,5 @@ import { ImagingWorklist } from '@/components/ImagingWorklist';
 export default function RadiologyPage() {
   const { me } = useMe();
   const { t } = useLang();
-  return <ImagingWorklist base="/radiology" spec="Spec §5.12" title={t('Radiology', 'Raajada')} canReport={canDo(me, 'rad', 'A')} needsStudyUid />;
+  return <ImagingWorklist base="/radiology" title={t('Radiology', 'Raajada')} canReport={canDo(me, 'rad', 'A')} needsStudyUid />;
 }
