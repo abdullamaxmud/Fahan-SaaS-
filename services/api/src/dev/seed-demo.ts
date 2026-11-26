@@ -84,6 +84,11 @@ const people: [string, string, string, boolean][] = [
   ['approver', 'Yuusuf Warsame', 'finance-approver', false],
   ['buyer', 'Khadar Ciise', 'procurement', false],
   ['hr', 'Ruqiya Maxamed', 'hr', false],
+  ['analyst', 'Abdiqani Farah', 'analyst', false],
+  ['governance', 'Dr. Ifrah Aden', 'clinical-governance', false],
+  ['safety', 'Dr. Yasmin Ali', 'clinical-safety-officer', false],
+  ['creviewer', 'Dr. Omar Hassan', 'clinical-reviewer', false],
+  ['designer', 'Sahra Abdi', 'designer', true],
 ];
 const ids: Record<string, unknown> = {};
 for (const [key, name, role, branchBound] of people) {
@@ -224,6 +229,32 @@ for (const [i, [key, title, base]] of ([['doctor', 'Physician', 180_000], ['nurs
   if (key === 'nurse') await db.collection('credentials').insertOne({ tenantId: tid, employeeId: e.insertedId, employeeName: person[1], kind: 'nursing-licence', number: 'SNMC-2231', issuer: 'Somali Nursing & Midwifery Council', expiresOn: soon, createdAt: now });
   if (key === 'doctor') await db.collection('credentials').insertOne({ tenantId: tid, employeeId: e.insertedId, employeeName: person[1], kind: 'medical-licence', number: 'SMC-0091', issuer: 'Somali Medical Council', expiresOn: `${now.getUTCFullYear() + 2}-03-31`, createdAt: now });
 }
+
+// ---- Phase 6: coded visits for disease intelligence, and one published form ----
+const visitPts: [string, string, string][] = [
+  ['Asha', 'Warsame', '1985-04-11'], ['Hassan', 'Abdi', '1972-09-30'], ['Nimco', 'Farah', '2012-02-14'],
+  ['Mohamud', 'Ali', '1958-11-03'], ['Hibo', 'Yusuf', '1999-07-21'], ['Bile', 'Osman', '1990-12-08'],
+];
+for (const [i, [g, f, dob]] of visitPts.entries()) {
+  const pt = await db.collection('patients').insertOne({ tenantId: tid, mrn: `MGD-${yy}-${String(pts.length + i + 1).padStart(6, '0')}`, names: { given: g, family: f }, nameKeys: nameKeys(g, undefined, f), dob, sexAtBirth: i % 2 ? 'male' : 'female', branchIds: [bid], status: 'Active', careTeam: [ids.doctor], createdAt: now, version: 1 });
+  const enc = await db.collection('encounters').insertOne({ tenantId: tid, type: 'OPD', status: 'Open', patientId: pt.insertedId, branchId: bid, clinicianIds: [ids.doctor], reason: 'Fever', startedAt: now, createdAt: now, createdBy: ids.reception, version: 1 });
+  const dx = (code: string, display: string, certainty: string, primary: boolean) => ({ tenantId: tid, encounterId: enc.insertedId, patientId: pt.insertedId, branchId: bid, codeSystem: 'ICD-11', code, display, certainty, primary, recordedAt: now, authorId: ids.doctor, history: [], version: 1 });
+  await db.collection('diagnoses').insertOne(dx('1F40', 'Malaria due to Plasmodium falciparum', 'confirmed', true));
+  if (i < 5) await db.collection('diagnoses').insertOne(dx('CA40', 'Pneumonia', 'suspected', false));
+  if (i < 2) await db.collection('diagnoses').insertOne(dx('BA00', 'Essential hypertension', 'confirmed', false));
+}
+await db.collection('counters').updateOne({ _id: `mrn:MGD:${yy}` as never }, { $set: { seq: pts.length + visitPts.length } }, { upsert: true });
+await db.collection('form_definitions').insertOne({
+  tenantId: tid, key: 'fall-risk', version: 1, name: 'Fall risk assessment', module: 'nur', highRisk: true, approval: { module: 'nur', level: 'S' },
+  fields: [
+    { type: 'number', key: 'score', label: 'Morse fall score', labelSo: 'Dhibcaha Morse', required: true, min: 0, max: 125, integer: true },
+    { type: 'select', key: 'risk', label: 'Risk level', labelSo: 'Heerka khatarta', required: true, options: ['low', 'medium', 'high'] },
+    { type: 'checkbox', key: 'bed_rails', label: 'Bed rails up', labelSo: 'Birta sariirta', required: false },
+    { type: 'longtext', key: 'notes', label: 'Notes', labelSo: 'Qoraal', required: false, maxLength: 2000 },
+  ],
+  status: 'Published', publishedAt: now, safetySignoff: { by: ids.safety, byName: 'Dr. Yasmin Ali', at: now }, createdBy: ids.designer, approvedBy: ids.admin, createdAt: now,
+  history: [{ at: now, action: 'created', by: ids.designer, byName: 'Sahra Abdi' }, { at: now, action: 'published', by: ids.admin, byName: 'Mustafe Xirsi' }],
+});
 
 const dir = resolve(process.cwd(), '.data');
 mkdirSync(dir, { recursive: true });

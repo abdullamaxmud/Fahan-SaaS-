@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
-import { LayoutDashboard, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { MODULES, MODULE_GROUPS, ROLE_BY_ID, TIERS, type ModuleGroup } from '@fahan/policy';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
@@ -35,6 +35,11 @@ const ROUTES: Record<string, string> = {
   inv: '/inventory',
   bb: '/bloodbank',
   eq: '/equipment',
+  bi: '/reports',
+  aifin: '/ai-finance',
+  aidis: '/ai-disease',
+  ai360: '/hospital-360',
+  studio: '/studio',
   bill: '/billing',
   ins: '/insurance',
   acct: '/finance',
@@ -104,6 +109,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <LayoutDashboard size={18} strokeWidth={1.75} />
             {t('My workspace', 'Goobta shaqadayda')}
           </Link>
+          {me.kind !== 'platform' ? (
+            <Link href="/forms" className={linkCls(path.startsWith('/forms'))} onClick={() => setOpen(false)}>
+              <ClipboardList size={18} strokeWidth={1.75} />
+              {t('My forms', 'Foomamkayga')}
+            </Link>
+          ) : null}
           {(() => {
             // Several modules can open the same page (e.g. wards); highlight only the first of them.
             const lit = new Set<string>();

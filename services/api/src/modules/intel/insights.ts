@@ -40,7 +40,7 @@ export const FLOW: Record<InsightKind, { generate: [ModuleKey, Level]; steps: St
     final: 'Reviewed',
   },
 };
-export const AI_DISCLOSURE = 'Written by AI from certified metric snapshots. Every figure is listed with its metric id; a person reviewed it before release.';
+export const AI_DISCLOSURE = 'Written by AI from certified metric snapshots. Every figure is listed with its metric id. It is released only after the named people review it.';
 
 const id = (x: Document) => (x._id as ObjectId).toHexString();
 

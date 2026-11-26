@@ -2,14 +2,15 @@
 
 Multi-tenant SaaS hospital operating platform. Built from the *Advanced Hospital Management System Developer Documentation* (v1.0).
 
-**Status: Phase 5 — Revenue & operations.**
+**Status: Phase 6 — AI, BI & automation.**
 
 - Phase 1 (done): identity, MFA, 55 roles, one database per hospital, organisation setup, tamper-evident audit trail.
 - Phase 2 (done): patient index with duplicate detection and reversible merges, consent, clinic schedules and appointments without double-booking, check-in queue, outpatient visits with vitals, signed and amended notes, ICD-11 diagnoses, patient timeline.
 - Phase 3 (done): allergies, break-glass with review, emergency department, wards and beds, admissions and discharge, nursing care plans and handovers, ICU device readings, theatres with the WHO safety checklist, maternity with linked newborn records, ambulance and referrals.
 - Phase 4 (done): inventory by batch and expiry, laboratory with verification, QC and critical values, radiology and diagnostics with signed reports, equipment and calibration, pharmacy with allergy checks and idempotent dispensing, medication chart, blood bank with compatibility and traceability.
 - Phase 5 (done): double-entry ledger with period close, charges captured from clinical events, invoices, tills and idempotent payments, four-eyes refunds, signed mobile-money callbacks, insurance claims with denials and remittance, procurement with 3-way match, HR, rosters, leave and payroll.
-- Next: Phase 6 — reporting, BI and the AI assistants.
+- Phase 6 (done): certified, versioned metrics; immutable monthly snapshots with fingerprints; disease counts per spec §9.3 with small-cohort suppression; AI finance and disease summaries whose every number is checked against the snapshot and released only after review; the signed monthly Hospital 360 report; a no-code forms studio with versions and rollback.
+- Next: Phase 7 — hardening and pilot (data migration, role testing, clinical UAT, penetration and restore tests).
 
 ## Layout
 
