@@ -172,6 +172,10 @@ export class Data {
       db.collection('diagnoses').createIndex({ tenantId: 1, recordedAt: 1, code: 1 }),
       db.collection('ai_insights').createIndex({ tenantId: 1, kind: 1, createdAt: -1 }),
       db.collection('h360_reports').createIndex({ tenantId: 1, period: 1, currency: 1, version: 1 }, { unique: true, name: 'one_report_version' }),
+      // Forms studio (spec §5.33): versions are kept; only one version of a form is live.
+      db.collection('form_definitions').createIndex({ tenantId: 1, key: 1, version: 1 }, { unique: true }),
+      db.collection('form_definitions').createIndex({ tenantId: 1, key: 1 }, { unique: true, partialFilterExpression: { status: 'Published' }, name: 'one_published_version' }),
+      db.collection('form_submissions').createIndex({ tenantId: 1, formKey: 1, submittedAt: -1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
