@@ -5,7 +5,7 @@ import { Pill as PillIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { fullName, type PatientBrief } from '@/components/clinical';
-import { Card, ErrorNote, PageHeader, Pill, useAction } from '@/components/ui';
+import { Card, ErrorNote, PageHeader, Pill, Tabs, useAction } from '@/components/ui';
 
 interface Rx {
   id: string;
@@ -37,6 +37,8 @@ function newKey() {
 export default function PharmacyPage() {
   const { t } = useLang();
   const [queue, setQueue] = useState<Rx[]>([]);
+  const [tab, setTab] = useState<'open' | 'dispensed'>('open');
+  const [ret, setRet] = useState<Record<string, { quantity: string; reason: string }>>({});
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   // One idempotency key per prescription, kept across retries so a double click never dispenses twice.
@@ -46,13 +48,13 @@ export default function PharmacyPage() {
 
   const refresh = useCallback(async () => {
     await load.run(async () => {
-      setQueue(await api<Rx[]>('/pharmacy/queue'));
+      setQueue(await api<Rx[]>(`/pharmacy/queue?status=${tab}`));
       const s = (await api<Store[]>('/inventory/stores')).filter((x) => x.kind === 'pharmacy');
       setStores(s);
       setStoreId((v) => v || s[0]?.id || '');
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tab]);
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -81,8 +83,16 @@ export default function PharmacyPage() {
           ))}
         </select>
       </div>
+      <Tabs<'open' | 'dispensed'>
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: 'open', label: t('To verify and dispense', 'La xaqiijiyo oo la bixiyo') },
+          { id: 'dispensed', label: t('Dispensed (returns)', 'La bixiyay (celin)') },
+        ]}
+      />
       <ErrorNote error={load.error ?? act.error} />
-      <Card title={`${t('Queue', 'Safka')} · ${queue.length}`}>
+      <Card title={`${tab === 'open' ? t('Queue', 'Safka') : t('Dispensed in the last 7 days', 'La bixiyay 7-dii maalmood')} · ${queue.length}`}>
         <ul className="grid text-[13px]">
           {queue.map((rx) => (
             <li key={rx.id} className="grid gap-1.5 border-t border-line px-4 py-3 first:border-t-0">
@@ -117,10 +127,19 @@ export default function PharmacyPage() {
                     {t('Dispense', 'Bixi')}
                   </button>
                 ) : null}
+                {rx.status === 'Dispensed' ? (
+                  <>
+                    <input className="input h-7 w-20 text-xs" inputMode="numeric" placeholder={t('Qty', 'Tiro')} value={ret[rx.id]?.quantity ?? ''} onChange={(e) => setRet({ ...ret, [rx.id]: { reason: ret[rx.id]?.reason ?? '', quantity: e.target.value } })} aria-label={t('Quantity returned', 'Tirada la celiyay')} />
+                    <input className="input h-7 min-w-0 flex-1 text-xs" placeholder={t('Why returned', 'Sababta celinta')} value={ret[rx.id]?.reason ?? ''} onChange={(e) => setRet({ ...ret, [rx.id]: { quantity: ret[rx.id]?.quantity ?? '', reason: e.target.value } })} />
+                    <button className="btn h-7 px-2.5 text-xs" disabled={!Number(ret[rx.id]?.quantity) || (ret[rx.id]?.reason ?? '').length < 3 || act.busy} onClick={() => run(() => api(`/pharmacy/prescriptions/${rx.id}/return`, { body: { quantity: Number(ret[rx.id]!.quantity), reason: ret[rx.id]!.reason } }))}>
+                      {t('Return to stock', 'Ku celi kaydka')}
+                    </button>
+                  </>
+                ) : null}
               </div>
             </li>
           ))}
-          {!queue.length ? <li className="px-4 pb-4 text-ink-3">{t('Nothing to verify or dispense.', 'Waxba ma sugayaan.')}</li> : null}
+          {!queue.length ? <li className="px-4 pb-4 text-ink-3">{tab === 'open' ? t('Nothing to verify or dispense.', 'Waxba ma sugayaan.') : t('Nothing dispensed in the last 7 days.', 'Waxba lama bixin 7-dii maalmood.')}</li> : null}
         </ul>
       </Card>
     </>

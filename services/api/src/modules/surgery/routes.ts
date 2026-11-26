@@ -79,8 +79,10 @@ export function surgeryRoutes(deps: Deps): Router {
     });
   });
 
-  r.get('/theatres', need(deps, 'sx', 'V'), async (req, res) => {
+  /** Theatres for the surgical team and for the biomedical staff who take a room out of service. */
+  r.get('/theatres', async (req, res) => {
     const a = req.actor!;
+    if (!can(a.perms, 'sx', 'V') && !can(a.perms, 'eq', 'V')) await deny(deps, req, 'theatres', 'requires surgery or equipment access');
     const f: Document = { tenantId: a.tenantId };
     if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
     const list = await db(req).collection('theatres').find(f).sort({ code: 1 }).toArray();

@@ -148,6 +148,11 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
                     ) : (
                       <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{n.text}</p>
                     )}
+                    {!closed && n.status === 'Draft' && !mine && n.kind === 'progress' && canDo(me, 'nur', 'S') ? (
+                      <button className="btn btn-primary mt-2 h-8 px-2.5 text-xs" onClick={() => run(() => api(`/nursing/notes/${n.id}/verify`, { body: {} }))}>
+                        {t('Verify this nursing note', 'Xaqiiji qoraalkan kalkaalinta')}
+                      </button>
+                    ) : null}
                     {!closed && n.status === 'Draft' && mine ? (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {draftText !== undefined ? (

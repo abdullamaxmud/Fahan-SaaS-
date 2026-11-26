@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { useReauth } from './Reauth';
 import { fullName, type PatientBrief } from './clinical';
-import { Card, ErrorNote, PageHeader, Pill, useAction } from './ui';
+import { Card, ErrorNote, PageHeader, Pill, Tabs, useAction } from './ui';
 
 interface Order {
   id: string;
@@ -32,6 +32,8 @@ interface Asset {
 export function ImagingWorklist({ base, title, canReport, needsStudyUid }: { base: string; title: string; canReport: boolean; needsStudyUid: boolean }) {
   const { t } = useLang();
   const [list, setList] = useState<Order[]>([]);
+  const [view, setView] = useState<'open' | 'final'>('open');
+  const [add, setAdd] = useState<Record<string, string>>({});
   const [assets, setAssets] = useState<Asset[]>([]);
   const [form, setForm] = useState<Record<string, { assetId?: string; at?: string; uid?: string; findings?: string; impression?: string; critical?: string }>>({});
   const load = useAction();
@@ -40,11 +42,11 @@ export function ImagingWorklist({ base, title, canReport, needsStudyUid }: { bas
 
   const refresh = useCallback(async () => {
     await load.run(async () => {
-      setList(await api<Order[]>(`${base}/worklist`));
+      setList(await api<Order[]>(`${base}/worklist?status=${view}`));
       setAssets(await api<Asset[]>('/equipment/assets').catch(() => []));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base]);
+  }, [base, view]);
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -58,8 +60,18 @@ export function ImagingWorklist({ base, title, canReport, needsStudyUid }: { bas
       <PageHeader title={title}>
         {t('Orders, scheduling and signed reports.', 'Dalabyada, jadwalka iyo warbixinnada.')}
       </PageHeader>
+      {canReport ? (
+        <Tabs<'open' | 'final'>
+          value={view}
+          onChange={setView}
+          items={[
+            { id: 'open', label: t('Worklist', 'Liiska shaqada') },
+            { id: 'final', label: t('Signed reports (14 days)', 'Warbixinno saxiixan') },
+          ]}
+        />
+      ) : null}
       <ErrorNote error={load.error ?? act.error} />
-      <Card title={`${t('Worklist', 'Liiska shaqada')} · ${list.length}`}>
+      <Card title={`${view === 'open' ? t('Worklist', 'Liiska shaqada') : t('Signed reports', 'Warbixinno saxiixan')} · ${list.length}`}>
         <ul className="grid text-[13px]">
           {list.map((o) => {
             const f = form[o.id] ?? {};
@@ -80,6 +92,32 @@ export function ImagingWorklist({ base, title, canReport, needsStudyUid }: { bas
                   </span>
                 </div>
                 <p className="text-ink-2">“{o.clinicalQuestion}”</p>
+                {o.status === 'Final' ? (
+                  <div className="grid gap-1.5">
+                    {o.report ? (
+                      <p>
+                        <b>{o.report.impression}</b> — {o.report.findings}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-1.5">
+                      <input className="input h-8 min-w-0 flex-1 text-xs" placeholder={t('Addendum: what is added or corrected', 'Ku-dar: maxaa la daray ama la saxay')} value={add[o.id] ?? ''} onChange={(e) => setAdd({ ...add, [o.id]: e.target.value })} />
+                      <button
+                        className="btn h-8 text-xs"
+                        disabled={(add[o.id] ?? '').trim().length < 5 || act.busy}
+                        onClick={() =>
+                          run(async () => {
+                            const r = await guarded(() => api(`${base}/orders/${o.id}/addendum`, { body: { text: add[o.id] } }));
+                            setAdd({ ...add, [o.id]: '' });
+                            return r;
+                          })
+                        }
+                      >
+                        {t('Sign addendum', 'Saxiix ku-darka')}
+                      </button>
+                    </div>
+                    <span className="text-[12px] text-ink-3">{t('The signed report never changes; the addendum is added below it with your name.', 'Warbixinta saxiixan ma beddelanto; ku-darka hoos ayaa lagu daraa.')}</span>
+                  </div>
+                ) : null}
                 {o.status === 'Ordered' ? (
                   <div className="flex flex-wrap items-center gap-1.5">
                     <select className="input h-8 w-auto text-xs" value={f.assetId ?? ''} onChange={(e) => set('assetId', e.target.value)} aria-label="Device">

@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
 import { Drawer, Facts, fmtDate, fmtDateTime } from '@/components/Dialog';
+import { TheatreStatus } from '@/components/TheatreStatus';
 import { Card, Empty, ErrorNote, Field, PageHeader, Pill, Tabs, fieldErrors, useAction } from '@/components/ui';
 
 interface Asset {
@@ -196,6 +197,7 @@ export default function EquipmentPage() {
         </Card>
       )}
 
+      {tab === 'devices' ? <TheatreStatus /> : null}
       {open ? (
         <AssetPanel
           a={open}

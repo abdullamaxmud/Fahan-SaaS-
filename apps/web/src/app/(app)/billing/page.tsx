@@ -7,6 +7,7 @@ import { useLang } from '@/lib/i18n';
 import { money, newKey, patientName, toMinor } from '@/lib/money';
 import { canDo, useMe } from '@/lib/session';
 import { useReauth } from '@/components/Reauth';
+import { PaymentProviders } from '@/components/PaymentProviders';
 import { Card, ErrorNote, Field, PageHeader, Pill, fieldErrors, useAction } from '@/components/ui';
 
 type Pat = { names?: { given?: string; family?: string }; mrn?: string } | null;
@@ -135,6 +136,18 @@ export default function BillingPage() {
                           ) : (
                             <span className="num ml-auto">{money(c.quantity * c.unitPriceMinor, c.currency)}</span>
                           )}
+                          {supervisor ? (
+                            <button
+                              className="btn h-7 px-2 text-[12px]"
+                              title={t('Remove a charge entered by mistake', 'Ka saar kharash qalad ah')}
+                              onClick={() => {
+                                const reason = window.prompt(t('Why remove this charge?', 'Maxaa loo saarayaa kharashkan?'));
+                                if (reason && reason.trim().length >= 3) void run(() => api(`/billing/charges/${c.id}/cancel`, { body: { reason } }));
+                              }}
+                            >
+                              {t('Remove', 'Ka saar')}
+                            </button>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
@@ -446,6 +459,7 @@ export default function BillingPage() {
               ) : null}
             </div>
           </Card>
+          {supervisor ? <PaymentProviders /> : null}
         </div>
       </div>
     </>

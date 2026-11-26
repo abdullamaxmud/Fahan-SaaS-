@@ -7,6 +7,7 @@ import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
 import { Card, ErrorNote, Field, PageHeader, Pill, Tabs, fieldErrors, statusTone, useAction } from '@/components/ui';
 import { HospitalSettings } from '@/components/HospitalSettings';
+import { FacilitiesSetup } from '@/components/Facilities';
 
 interface Branch {
   id: string;
@@ -34,7 +35,7 @@ export default function BranchesPage() {
   const addB = useAction();
   const addD = useAction();
   const canEdit = canDo(me, 'org', 'E');
-  const [tab, setTab] = useState<'branches' | 'profile' | 'modules'>('branches');
+  const [tab, setTab] = useState<'branches' | 'facilities' | 'profile' | 'modules'>('branches');
 
   const refresh = useCallback(async () => {
     await load.run(async () => {
@@ -57,17 +58,19 @@ export default function BranchesPage() {
       <PageHeader title={t('Hospital setup', 'Habaynta isbitaalka')}>
         {t('Branches, departments, hospital profile and the modules in use.', 'Laamaha, waaxaha, xogta isbitaalka iyo qaybaha la isticmaalo.')}
       </PageHeader>
-      <Tabs<'branches' | 'profile' | 'modules'>
+      <Tabs<'branches' | 'facilities' | 'profile' | 'modules'>
         value={tab}
         onChange={setTab}
         items={[
           { id: 'branches', label: t('Branches & departments', 'Laamaha & waaxaha') },
+          { id: 'facilities', label: t('Theatres & ambulances', 'Qalliinka & ambalaasyada') },
           { id: 'profile', label: t('Profile', 'Xogta') },
           { id: 'modules', label: t('Modules', 'Qaybaha') },
         ]}
       />
       <ErrorNote error={load.error} />
-      {tab !== 'branches' ? <HospitalSettings tab={tab} /> : null}
+      {tab === 'facilities' ? <FacilitiesSetup /> : null}
+      {tab === 'profile' || tab === 'modules' ? <HospitalSettings tab={tab} /> : null}
       <div className={`grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] ${tab === 'branches' ? '' : 'hidden'}`}>
         <div className="grid gap-4">
           <Card title={t('Branches', 'Laamaha')}>

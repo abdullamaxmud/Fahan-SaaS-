@@ -68,6 +68,19 @@ export default function ReferralsPage() {
               <Ambulance size={16} />
               <b className="font-mono">{v.code}</b>
               <Pill tone={v.status === 'Available' ? 'ok' : v.status === 'OnRun' ? 'warn' : 'crit'}>{v.status}</Pill>
+              {dispatcher && v.status !== 'OnRun' ? (
+                <button
+                  className="btn h-7 px-2 text-xs"
+                  onClick={() => {
+                    if (v.status === 'Available') {
+                      const reason = window.prompt(t('Why is this ambulance out of service?', 'Maxaa ambalaaskan u joogsaday?'));
+                      if (reason && reason.trim().length >= 3) void run(() => api(`/ambulance/vehicles/${v.id}/status`, { body: { status: 'OutOfService', reason } }));
+                    } else void run(() => api(`/ambulance/vehicles/${v.id}/status`, { body: { status: 'Available' } }));
+                  }}
+                >
+                  {v.status === 'Available' ? t('Off the road', 'Jooji') : t('Back in service', 'Dib u shaqee')}
+                </button>
+              ) : null}
             </span>
           ))}
         </div>
@@ -102,6 +115,17 @@ export default function ReferralsPage() {
                     {r.status === 'Dispatched' ? (
                       <button className="btn h-7 px-2.5 text-xs" onClick={() => run(() => api(`/referrals/${r.id}/arrive`, { body: {} }))}>
                         {t('Arrived', 'Wuu yimid')}
+                      </button>
+                    ) : null}
+                    {r.status === 'Requested' || r.status === 'Dispatched' ? (
+                      <button
+                        className="btn h-7 px-2.5 text-xs"
+                        onClick={() => {
+                          const reason = window.prompt(t('Why is this referral cancelled?', 'Maxaa loo joojiyay gudbintan?'));
+                          if (reason && reason.trim().length >= 3) void run(() => api(`/referrals/${r.id}/cancel`, { body: { reason } }));
+                        }}
+                      >
+                        {t('Cancel', 'Jooji')}
                       </button>
                     ) : null}
                   </div>

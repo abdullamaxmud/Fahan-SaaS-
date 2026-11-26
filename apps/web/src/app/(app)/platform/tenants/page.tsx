@@ -23,6 +23,8 @@ export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [form, setForm] = useState({ slug: '', name: '', adminName: '', adminEmail: '' });
   const [invite, setInvite] = useState<{ slug: string; email: string; token: string } | null>(null);
+  const [oversight, setOversight] = useState<{ tenantId: string; email: string; name: string; role: string } | null>(null);
+  const [oversightLink, setOversightLink] = useState('');
   const load = useAction();
   const act = useAction();
   const { guarded, dialog } = useReauth();
@@ -89,9 +91,38 @@ export default function TenantsPage() {
                     </td>
                     <td className="td text-right">
                       {canDo(me, 'plat', 'A') ? (
-                        <button className="btn h-7 px-2.5 text-xs" onClick={() => setStatus(x, x.status === 'Active' ? 'Suspended' : 'Active')}>
-                          {x.status === 'Active' ? t('Suspend', 'Hakad') : t('Reactivate', 'Dib u hawlgeli')}
-                        </button>
+                        <span className="flex justify-end gap-1.5">
+                          {x.status === 'Active' ? (
+                            <button className="btn h-7 px-2.5 text-xs" onClick={() => setOversight(oversight?.tenantId === x.id ? null : { tenantId: x.id, email: '', name: '', role: 'security-auditor' })}>
+                              {t('Appoint auditor / DPO', 'Magacaab hubiye / DPO')}
+                            </button>
+                          ) : null}
+                          <button className="btn h-7 px-2.5 text-xs" onClick={() => setStatus(x, x.status === 'Active' ? 'Suspended' : 'Active')}>
+                            {x.status === 'Active' ? t('Suspend', 'Hakad') : t('Reactivate', 'Dib u hawlgeli')}
+                          </button>
+                        </span>
+                      ) : null}
+                      {oversight?.tenantId === x.id ? (
+                        <form
+                          className="mt-2 grid gap-1.5 text-left"
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const r = await act.run(() => guarded(() => api<{ invite: { token: string } }>(`/platform/tenants/${x.id}/oversight-invite`, { body: { email: oversight.email, name: oversight.name, role: oversight.role } })));
+                            if (r) setOversightLink(`${window.location.origin}/invite?tenant=${x.slug}&code=${r.invite.token}`);
+                          }}
+                        >
+                          <span className="text-[12px] text-ink-3">{t('Independent oversight is appointed by the platform, not by the hospital’s own admins.', 'Kormeerka madaxa-bannaan waxaa magacaaba madasha.')}</span>
+                          <select className="input h-8 text-xs" value={oversight.role} onChange={(e) => setOversight({ ...oversight, role: e.target.value })} aria-label={t('Role', 'Doorka')}>
+                            <option value="security-auditor">{t('Security auditor', 'Hubiyaha amniga')}</option>
+                            <option value="dpo">{t('Data protection officer', 'Sarkaalka ilaalinta xogta')}</option>
+                          </select>
+                          <input className="input h-8 text-xs" required placeholder={t('Full name', 'Magaca')} value={oversight.name} onChange={(e) => setOversight({ ...oversight, name: e.target.value })} />
+                          <input className="input h-8 text-xs" type="email" required placeholder={t('Email', 'Iimayl')} value={oversight.email} onChange={(e) => setOversight({ ...oversight, email: e.target.value })} />
+                          <button className="btn btn-primary h-8 justify-self-end text-xs" disabled={act.busy}>
+                            {t('Create invitation', 'Samee casuumad')}
+                          </button>
+                          {oversightLink ? <code className="break-all rounded bg-surface-2 px-2 py-1 font-mono text-[11px]">{oversightLink}</code> : null}
+                        </form>
                       ) : null}
                     </td>
                   </tr>

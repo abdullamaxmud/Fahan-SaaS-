@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
 import { fullName, type PatientBrief } from '@/components/clinical';
-import { Card, ErrorNote, PageHeader, Pill, useAction } from '@/components/ui';
+import { Card, ErrorNote, PageHeader, Pill, useAction, Tabs } from '@/components/ui';
+import { LabQc } from '@/components/LabQc';
 
 interface Result {
   analyteCode: string;
@@ -31,7 +32,7 @@ interface Order {
 interface TestDef {
   id: string;
   code: string;
-  analytes: { code: string; name: string; unit?: string }[];
+  analytes: { code: string; name: string; unit?: string; kind?: string }[];
 }
 
 const FLAG_TONE: Record<string, 'ok' | 'warn' | 'crit' | 'plain'> = { N: 'ok', L: 'warn', H: 'warn', LL: 'crit', HH: 'crit', A: 'warn' };
@@ -43,18 +44,20 @@ export default function LabPage() {
   const [tests, setTests] = useState<TestDef[]>([]);
   const [criticals, setCriticals] = useState<Order[]>([]);
   const [entry, setEntry] = useState<Record<string, Record<string, string>>>({});
+  const [view, setView] = useState<'open' | 'Released'>('open');
+  const [amendWhy, setAmendWhy] = useState<Record<string, string>>({});
   const load = useAction();
   const act = useAction();
   const pathologist = canDo(me, 'lab', 'A');
 
   const refresh = useCallback(async () => {
     await load.run(async () => {
-      setList(await api<Order[]>('/lab/worklist'));
+      setList(await api<Order[]>(`/lab/worklist?status=${view}`));
       setCriticals(await api<Order[]>('/lab/criticals'));
       setTests(await api<TestDef[]>('/lab/tests'));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [view]);
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -67,6 +70,16 @@ export default function LabPage() {
       <PageHeader title={t('Laboratory', 'Shaybaarka')}>
         {t('Samples, results and verification — urgent first.', 'Muunadaha, natiijooyinka iyo xaqiijinta.')}
       </PageHeader>
+      {pathologist ? (
+        <Tabs<'open' | 'Released'>
+          value={view}
+          onChange={setView}
+          items={[
+            { id: 'open', label: t('Worklist', 'Liiska shaqada') },
+            { id: 'Released', label: t('Released results', 'Natiijooyinka la sii daayay') },
+          ]}
+        />
+      ) : null}
       {criticals.length ? (
         <div className="grid gap-1 rounded-[12px] bg-crit-soft px-4 py-3 text-[13px] text-crit">
           <b className="flex items-center gap-2">
@@ -143,6 +156,33 @@ export default function LabPage() {
                       <button className="btn h-7 px-2.5 text-xs">{t('Save results', 'Kaydi')}</button>
                     </form>
                   ) : null}
+                  {pathologist && o.status === 'Released' && def ? (
+                    <form
+                      className="grid w-full gap-1.5"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void run(() =>
+                          api(`/lab/orders/${o.id}/amend`, {
+                            body: { reason: amendWhy[o.id], results: def.analytes.map((an) => ({ analyteCode: an.code, value: Number.isNaN(Number(vals[an.code])) ? vals[an.code] : Number(vals[an.code]) })) },
+                          }),
+                        );
+                      }}
+                    >
+                      <span className="text-[12px] text-ink-3">{t('Amend a released result: the old values stay in the history.', 'Beddel natiijo la sii daayay: qiimihii hore taariikhda ayay ku jiraan.')}</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {def.analytes.map((an) => (
+                          <label key={an.code} className="flex items-center gap-1 text-xs">
+                            {an.code}
+                            <input className="input h-7 w-20 px-2 text-xs" required value={vals[an.code] ?? ''} onChange={(e) => setEntry({ ...entry, [o.id]: { ...vals, [an.code]: e.target.value } })} aria-label={an.name} />
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <input className="input h-7 min-w-0 flex-1 text-xs" required minLength={3} placeholder={t('Why amended', 'Sababta')} value={amendWhy[o.id] ?? ''} onChange={(e) => setAmendWhy({ ...amendWhy, [o.id]: e.target.value })} />
+                        <button className="btn h-7 px-2.5 text-xs">{t('Amend result', 'Beddel')}</button>
+                      </div>
+                    </form>
+                  ) : null}
                   {pathologist && o.status === 'Processing' && o.results.length ? (
                     <button className="btn btn-primary h-7 px-2.5 text-xs" onClick={() => run(() => api(`/lab/orders/${o.id}/verify`, { body: {} }))}>
                       {t('Verify', 'Xaqiiji')}
@@ -160,6 +200,7 @@ export default function LabPage() {
           {!list.length ? <li className="px-4 pb-4 text-ink-3">{t('Nothing waiting.', 'Waxba ma sugayaan.')}</li> : null}
         </ul>
       </Card>
+      {tests.length && canDo(me, 'lab', 'E') ? <LabQc key={tests.length} tests={tests} /> : null}
     </>
   );
 }

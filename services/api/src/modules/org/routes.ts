@@ -38,6 +38,22 @@ export function orgRoutes(deps: Deps): Router {
     res.json({ data: list.map((b) => ({ id: b._id.toHexString(), code: b.code, name: b.name, timezone: b.timezone })) });
   });
 
+  /** Theatres and ambulances, for the people who set the hospital up. */
+  r.get('/facilities', need(deps, 'org', 'V'), async (req, res) => {
+    const a = req.actor!;
+    const f = { tenantId: a.tenantId, ...branchFilter(req) };
+    const [theatres, vehicles] = await Promise.all([
+      a.db!.collection('theatres').find(f).sort({ code: 1 }).toArray(),
+      a.db!.collection('vehicles').find(f).sort({ code: 1 }).toArray(),
+    ]);
+    res.json({
+      data: {
+        theatres: theatres.map((t) => ({ id: t._id.toHexString(), code: t.code, name: t.name, status: t.status, branchId: t.branchId.toHexString() })),
+        vehicles: vehicles.map((v) => ({ id: v._id.toHexString(), code: v.code, kind: v.kind, status: v.status, branchId: v.branchId.toHexString() })),
+      },
+    });
+  });
+
   /** Clinical colleagues for pickers (care team, bedside second checker): names and roles only. */
   r.get('/lookup/clinical-staff', async (req, res) => {
     const a = req.actor!;

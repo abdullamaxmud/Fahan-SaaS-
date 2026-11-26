@@ -7,6 +7,7 @@ import { useLang } from '@/lib/i18n';
 import { money, toMinor } from '@/lib/money';
 import { canDo, useMe } from '@/lib/session';
 import { useReauth } from '@/components/Reauth';
+import { EmployeePanel } from '@/components/EmployeePanel';
 import { Card, ErrorNote, Field, PageHeader, Pill, fieldErrors, useAction } from '@/components/ui';
 
 interface Employee { id: string; staffNumber: string; name: string; jobTitle: string; hireDate: string; salary?: { currency: string; baseMinor: number; allowancesMinor: number; deductionsMinor: number } }
@@ -24,6 +25,7 @@ export default function HrPage() {
   const { t } = useLang();
   const { guarded, dialog } = useReauth();
   const [emps, setEmps] = useState<Employee[]>([]);
+  const [openEmp, setOpenEmp] = useState<Employee | null>(null);
   const [creds, setCreds] = useState<Cred[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [leave, setLeave] = useState<Leave[]>([]);
@@ -197,7 +199,7 @@ export default function HrPage() {
                   </thead>
                   <tbody>
                     {emps.map((e) => (
-                      <tr key={e.id}>
+                      <tr key={e.id} className={hrAdmin ? 'cursor-pointer hover:bg-surface-2/60' : ''} onClick={() => hrAdmin && setOpenEmp(e)}>
                         <td className="td">
                           <b>{e.name}</b> <span className="font-mono text-[11.5px] text-ink-3">{e.staffNumber}</span>
                         </td>
@@ -382,6 +384,7 @@ export default function HrPage() {
           </div>
         </Card>
       ) : null}
+      {openEmp ? <EmployeePanel e={openEmp} onClose={() => setOpenEmp(null)} onDone={refresh} /> : null}
     </>
   );
 }

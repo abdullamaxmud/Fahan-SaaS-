@@ -145,7 +145,12 @@ export function pharmacyRoutes(deps: Deps): Router {
   r.get('/queue', need(deps, 'rx', 'S'), async (req, res) => {
     const a = req.actor!;
     if (a.scope === 'assigned-patient') await deny(deps, req, 'pharmacy queue', 'the queue is for pharmacy staff');
-    const f: Document = { tenantId: a.tenantId, status: { $in: ['Signed', 'Verified'] } };
+    const q = parse(z.object({ status: z.enum(['open', 'dispensed']).default('open') }), req.query);
+    // "dispensed": the last seven days, for returns.
+    const f: Document =
+      q.status === 'dispensed'
+        ? { tenantId: a.tenantId, status: 'Dispensed', 'dispensed.at': { $gte: new Date(now().getTime() - 7 * 86_400_000) } }
+        : { tenantId: a.tenantId, status: { $in: ['Signed', 'Verified'] } };
     if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
     const list = await db(req).collection('prescriptions').find(f).sort({ signedAt: 1 }).limit(300).toArray();
     const pats = await db(req).collection('patients').find({ _id: { $in: list.map((x) => x.patientId) } }, { projection: { names: 1, mrn: 1 } }).toArray();

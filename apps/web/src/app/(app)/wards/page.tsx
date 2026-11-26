@@ -200,6 +200,16 @@ export default function WardsPage() {
                             {t('Assign bed', 'Sii sariir')}
                           </button>
                         ) : null}
+                        {canDo(me, 'adm', 'E') && a.status === 'Requested' ? (
+                          <button
+                            className="btn h-7 px-2.5 text-xs"
+                            onClick={() => {
+                              if (window.confirm(t('Cancel this admission request?', 'Ma joojinaysaa codsigan dhigista?'))) void run(() => api(`/admissions/${a.id}/cancel`, { body: {} }));
+                            }}
+                          >
+                            {t('Cancel', 'Jooji')}
+                          </button>
+                        ) : null}
                         {canBeds && a.status === 'Admitted' ? (
                           <button className="btn h-7 px-2.5 text-xs" onClick={() => setPick({ admission: a, mode: 'transfer' })}>
                             {t('Transfer', 'U wareeji')}

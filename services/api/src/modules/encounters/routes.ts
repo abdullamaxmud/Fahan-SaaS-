@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import type { Document, ObjectId } from 'mongodb';
 import { z } from 'zod';
-import { isBranchBound, type Level } from '@fahan/policy';
+import { can, isBranchBound, type Level } from '@fahan/policy';
 import { VITAL_BY_CODE, isIcd11Code } from '@fahan/terminology';
 import type { Deps } from '../../context';
 import { AppError, Errors } from '../../lib/errors';
@@ -117,7 +117,8 @@ export function encounterRoutes(deps: Deps): Router {
       db(req).collection('observations').find({ encounterId: e._id }).sort({ effectiveAt: -1 }).toArray(),
       db(req)
         .collection('clinical_notes')
-        .find({ encounterId: e._id, $or: [{ status: { $ne: 'Draft' } }, { authorId: a.userId }] })
+        // Shift leads also see colleagues' unsigned progress notes, so they can verify them (spec §5.9).
+        .find({ encounterId: e._id, $or: [{ status: { $ne: 'Draft' } }, { authorId: a.userId }, ...(can(a.perms, 'nur', 'S') ? [{ status: 'Draft', kind: 'progress' }] : [])] })
         .sort({ createdAt: 1 })
         .toArray(),
       db(req).collection('diagnoses').find({ encounterId: e._id }).sort({ primary: -1, recordedAt: 1 }).toArray(),

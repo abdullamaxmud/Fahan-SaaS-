@@ -5,6 +5,7 @@ import { PackagePlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
+import { InventoryActions } from '@/components/InventoryActions';
 import { Card, ErrorNote, Field, PageHeader, Pill, fieldErrors, useAction } from '@/components/ui';
 
 interface Store {
@@ -184,6 +185,7 @@ export default function InventoryPage() {
                 <button className="btn justify-self-start">{t('Transfer (earliest expiry first)', 'Wareeji')}</button>
               </form>
             </Card>
+            <InventoryActions storeId={storeId} rows={rows} onDone={refresh} />
           </div>
         ) : null}
       </div>

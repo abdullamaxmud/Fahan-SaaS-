@@ -146,7 +146,12 @@ export function imagingRoutes(deps: Deps, k: Kind): Router {
   r.get('/worklist', need(deps, k.module, 'E'), async (req, res) => {
     const a = req.actor!;
     if (a.scope === 'assigned-patient') await deny(deps, req, `${k.module} worklist`, 'worklist is for department staff');
-    const f: Document = { tenantId: a.tenantId, status: { $in: ['Ordered', 'Scheduled', 'Acquired', 'Interpreted'] } };
+    const q = parse(z.object({ status: z.enum(['open', 'final']).default('open') }), req.query);
+    // "final": reports signed in the last 14 days, so an addendum can be added.
+    const f: Document =
+      q.status === 'final'
+        ? { tenantId: a.tenantId, status: 'Final', signedAt: { $gte: new Date(Date.now() - 14 * 86_400_000) } }
+        : { tenantId: a.tenantId, status: { $in: ['Ordered', 'Scheduled', 'Acquired', 'Interpreted'] } };
     if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
     const list = await col(req).find(f).sort({ orderedAt: 1 }).limit(500).toArray();
     const pats = await db(req).collection('patients').find({ _id: { $in: list.map((o) => o.patientId) } }, { projection: { names: 1, mrn: 1, dob: 1, sexAtBirth: 1 } }).toArray();
