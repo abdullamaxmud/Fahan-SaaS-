@@ -33,6 +33,7 @@ import { migrationRoutes } from './modules/migrations/routes';
 import { securityRoutes } from './modules/security/routes';
 import { studioRoutes } from './modules/studio/routes';
 import { procurementRoutes } from './modules/procurement/routes';
+import { qualityRoutes } from './modules/quality/routes';
 import { labRoutes } from './modules/lab/routes';
 import { maternityRoutes } from './modules/maternity/routes';
 import { nursingRoutes } from './modules/nursing/routes';
@@ -127,6 +128,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/integrations', integrationRoutes(deps));
   tenant.use('/migrations', migrationRoutes(deps));
   tenant.use('/security', securityRoutes(deps));
+  tenant.use('/quality', qualityRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

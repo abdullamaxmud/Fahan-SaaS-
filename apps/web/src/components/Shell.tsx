@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Bell, ClipboardList, Home, LogOut, Menu, Moon, Search, Sun, X } from 'lucide-react';
+import { Bell, ClipboardList, Home, LogOut, Menu, Moon, Search, Sun, TriangleAlert, X } from 'lucide-react';
 import { ROLE_BY_ID } from '@fahan/policy';
 import { api } from '@/lib/api';
 import { TASKS } from '@/lib/home';
@@ -69,7 +69,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     } catch {}
   }
 
-  const active = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`));
+  // Pages under 'Me' sit below a module path but must not light up that module.
+  const own = ['/quality/report'];
+  const active = (href: string) => (href === '/' ? path === '/' : path === href || (path.startsWith(`${href}/`) && !own.includes(path)));
   const linkCls = (on: boolean) =>
     `group flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${on ? 'bg-accent-soft text-accent-2' : 'text-ink-2 hover:bg-surface-2 hover:text-ink'}`;
 
@@ -108,6 +110,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <Link href="/forms" className={linkCls(active('/forms'))}>
                 <ClipboardList size={18} strokeWidth={1.75} />
                 {t('My forms', 'Foomamkayga')}
+              </Link>
+              <Link href="/quality/report" className={linkCls(active('/quality/report'))}>
+                <TriangleAlert size={18} strokeWidth={1.75} />
+                {t('Report an incident', 'Soo sheeg dhacdo')}
               </Link>
             </div>
           ) : null}
