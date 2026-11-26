@@ -89,6 +89,11 @@ const people: [string, string, string, boolean][] = [
   ['safety', 'Dr. Yasmin Ali', 'clinical-safety-officer', false],
   ['creviewer', 'Dr. Omar Hassan', 'clinical-reviewer', false],
   ['designer', 'Sahra Abdi', 'designer', true],
+  ['records2', 'Fartun Ismail', 'records-officer', false],
+  ['integrations', 'Yasin Hirad', 'integration-engineer', false],
+  ['dpo', 'Amina Said', 'dpo', false],
+  ['quality', 'Hodan Aw Ali', 'quality-officer', false],
+  ['hadmin', 'Liban Warsame', 'hospital-admin', false],
 ];
 const ids: Record<string, unknown> = {};
 for (const [key, name, role, branchBound] of people) {

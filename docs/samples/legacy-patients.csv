@@ -1,0 +1,11 @@
+legacy_id,given_name,middle_name,family_name,dob,sex,phone
+L-0001,Sagal,,Mohamed,1994-07-19,F,061 400 0001
+L-0002,Abdirahman,Ali,"Sheikh Nur",03/11/1966,M,+252 61 400 0002
+L-0003,Ifrah,,Osman,2016-01-30,F,
+L-0004,Yusuf,,Elmi,31/04/1980,M,
+L-0005,Asha,,Warsame,1985-04-11,F,
+L-0006,Mahad,,Guled,1979-13-01,M,
+L-0007,Nasra,,Hirsi,1999-09-09,X,
+L-0008,Omar,,Barre,1971-05-05,M,061 400 0008
+L-0008,Duplicate,,Id,1971-05-05,M,
+L-0009,Hibaaq,,Daud,2003-02-28,F,

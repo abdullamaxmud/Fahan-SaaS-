@@ -40,6 +40,7 @@ const ROUTES: Record<string, string> = {
   aidis: '/ai-disease',
   ai360: '/hospital-360',
   studio: '/studio',
+  intg: '/admin/integrations',
   bill: '/billing',
   ins: '/insurance',
   acct: '/finance',

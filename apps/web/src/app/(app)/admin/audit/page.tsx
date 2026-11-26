@@ -50,9 +50,14 @@ export default function AuditPage() {
       </PageHeader>
       <ErrorNote error={load.error} />
       {!isPlatform ? (
-        <a className="btn self-start" href="/admin/break-glass">
-          {t('Review emergency access', 'Eeg gelitaanka degdegga')}
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <a className="btn" href="/admin/break-glass">
+            {t('Review emergency access', 'Eeg gelitaanka degdegga')}
+          </a>
+          <a className="btn" href="/admin/security">
+            {t('Access reviews & incidents', 'Dib-u-eegista gelitaanka & dhacdooyinka')}
+          </a>
+        </div>
       ) : null}
       {chain ? (
         <div className={`flex items-center gap-3 rounded-[12px] p-3.5 text-[13.5px] ${chain.ok ? 'bg-ok-soft text-ok' : 'bg-crit-soft text-crit'}`}>

@@ -29,6 +29,7 @@ import { integrationRoutes } from './modules/integrations/routes';
 import { intelRoutes } from './modules/intel/routes';
 import { inventoryRoutes } from './modules/inventory/routes';
 import { migrationRoutes } from './modules/migrations/routes';
+import { securityRoutes } from './modules/security/routes';
 import { studioRoutes } from './modules/studio/routes';
 import { procurementRoutes } from './modules/procurement/routes';
 import { labRoutes } from './modules/lab/routes';
@@ -123,6 +124,7 @@ export function createApp(deps: Deps, log: Logger = pino({ level: deps.config.en
   tenant.use('/studio', studioRoutes(deps));
   tenant.use('/integrations', integrationRoutes(deps));
   tenant.use('/migrations', migrationRoutes(deps));
+  tenant.use('/security', securityRoutes(deps));
   tenant.use('/radiology', imagingRoutes(deps, RADIOLOGY));
   tenant.use('/diagnostics', imagingRoutes(deps, DIAGNOSTICS));
   tenant.use('/appointments', appointmentRoutes(deps));

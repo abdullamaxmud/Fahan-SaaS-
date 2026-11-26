@@ -1,0 +1,20 @@
+# ADR 0007 — Phase 7 hardening & pilot decisions
+
+Status: accepted · 2026-11-26
+
+| # | Decision | Why |
+|---|---|---|
+| 1 | **An in-house security sweep runs with every test run** (`security.test.ts`): cross-hospital id guessing on every module, NoSQL operator injection, mass assignment, MFA bypass, reuse of a signed-out cookie, cookie flags, security headers, oversized and malformed input, account discovery. It keeps known attacks from coming back; it does not replace an independent penetration test. | Spec §11.1, §11.3, §14.1 "Security". |
+| 2 | **Authenticator codes are accepted once** (the matched 30-second step is stored per user, RFC 6238 §5.2), and **five wrong codes end the session** regardless of IP address, on top of the per-IP rate limit. | Found in the sweep: a stolen password plus IP rotation could otherwise keep guessing; a seen code could be replayed. |
+| 3 | **Supply chain in CI**: types, all tests, `npm audit --omit=dev --audit-level=high`, then a production web build. Phase 7's audit found Next.js 15.1.3 (critical, incl. RCE advisories), zod 3 and postcss; fixed by Next.js 15.5.29 (same major), zod 4 (three call sites changed) and a postcss override. Fonts are self-hosted (OFL) so builds and pages never call an outside font service. | Spec §11.1 "dependency scanning", §13.3 pipeline. |
+| 4 | **FHIR R4 read-only facade** for nine resource types with published code systems (ICD-11, LOINC, UCUM, HL7). Partners use OAuth2 client credentials, 15-minute bearer tokens and SMART-style `system/<Type>.read` scopes; clients can be limited to branches. Lifecycle Configured → Tested → Enabled → Suspended: a client is enabled only after a conformance run passes on the hospital's own data; suspending revokes tokens at once. Only released lab results and signed reports leave; patients go out without phone or address. Every read is audited under the client. | Spec §12.1, §12.2, §5.34, §11.1 data minimisation. |
+| 5 | **Patient migration** is staged: CSV upload → dry run (format, impossible dates, repeated or already-imported legacy ids, likely duplicates using the MPI's own scoring) → commit by a second records officer with fresh MFA → reconciliation by count and SHA-256 fingerprint, re-checkable later. Legacy ids are linked uniquely, so a retry never imports a person twice. Rollback removes only records nobody has used. | Spec §15 Phase 7 "data migration with verification". |
+| 6 | **Encrypted logical backups and restore drills**: per-collection canonical EJSON, gzipped and sealed with AES-256-GCM under a separate `BACKUP_KEY`, with an HMAC-signed manifest of checksums and the audit-chain head. Restores go only into a drill database and are verified (counts, audit chain, a patient record, encrypted fields under `DATA_KEY`). Point-in-time recovery for the 15-minute RPO stays with the database platform. | Spec §11.1, §11.3, §13.2, §14.2 #10. |
+| 7 | **Operations**: `/health/ready` checks the database; `/metrics` (Prometheus text, bearer token, off by default) carries route templates, error codes and audit actions only — never identifiers. A read-path load test reports p50/p95/p99 against the 500 ms target. | Spec §13.2, §13.4. |
+| 8 | **Access reviews and incidents**: every active account is certified or revoked by someone other than its owner (a revoke suspends the account and ends its sessions); incidents are confidential to security roles and move Detected → Investigated → Remediated → Closed with written remediation and root cause; the reporter does not close their own incident. | Spec §5.35, §11.1 "privilege review", "incident response". |
+
+## Not done in Phase 7 (needs people or production infrastructure)
+- Clinical UAT sessions and sign-off (`docs/uat/clinical-uat.md` is the script).
+- Independent penetration test and legal / clinical governance review per jurisdiction (spec §11.2).
+- Load and restore timing on staging hardware with production-sized data; point-in-time recovery configuration.
+- HL7 v2 and DICOMweb adapters, FHIR writes, SIEM export of the audit trail.

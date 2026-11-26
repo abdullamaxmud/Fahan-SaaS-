@@ -10,7 +10,7 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 |---|---|---|---|---|---|
 | 5.1 | Organization & facilities | Built | `org` | `/admin/branches` | `phase1` |
 | 5.2 | Identity, roles & permissions | Built | `auth`, `iam`, `packages/policy` | `/admin/users` | `phase1`, `security`, policy package |
-| 5.3 | Registration & MPI | Built | `patients` | `/patients`, `/patients/merges` | `mpi` |
+| 5.3 | Registration & MPI | Built | `patients`, `migrations` | `/patients`, `/patients/merges`, `/patients/import` | `mpi`, `migration` |
 | 5.4 | Appointments & queues | Built | `appointments` | `/appointments` | `appointments` |
 | 5.5 | Outpatient encounters | Built | `encounters` | `/encounters` | `encounters` |
 | 5.6 | Emergency department | Built | `emergency` | `/emergency` | `emergency` |
@@ -41,8 +41,8 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 | 5.31 | AI disease intelligence | Built | `intel/insights` | `/ai-disease` | `intel`, `insights` |
 | 5.32 | Monthly Hospital 360 | Built | `intel/h360` | `/hospital-360` | `h360` |
 | 5.33 | Forms & workflow studio | Partial — approval rules; no notification triggers | `studio` | `/studio`, `/forms` | `studio` |
-| 5.34 | Integrations & developer API | Partial — signed payment webhooks; FHIR facade in Phase 7 | `billing/webhook` | — | `webhook` |
-| 5.35 | Security, audit & operations | Partial — hash-chained audit, security sweep; access reviews and incidents in Phase 7 | `audit` | `/admin/audit` | `phase1`, `security` |
+| 5.34 | Integrations & developer API | Partial — FHIR R4 read facade, scoped clients, signed payment webhooks; no HL7 v2 / DICOMweb adapters or FHIR writes | `fhir`, `integrations`, `billing/webhook` | `/admin/integrations` | `fhir`, `webhook` |
+| 5.35 | Security, audit & operations | Built — hash-chained audit, access reviews, incidents, backups and restore drill, readiness and metrics; SIEM export not built | `audit`, `security`, `ops` | `/admin/audit`, `/admin/security` | `phase1`, `security`, `secops`, `restore`, `ops` |
 
 ## Mandatory acceptance scenarios (spec §14.2)
 
@@ -57,7 +57,7 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 | 7 | Disease metric excludes ruled-out diagnoses and deduplicates repeat visits by stated definition | `intel` › counts unique patients, separates suspected, excludes ruled-out, and suppresses small cohorts |
 | 8 | Monthly AI report figures reconcile to the immutable snapshot; reviewer may reject the draft | `insights` › the AI summary carries the official figures; › a reviewer can reject a draft; `h360` › every figure cites its certified metric and snapshot |
 | 9 | Super Admin changes to roles propagate to authenticated sessions | `phase1` › role changes apply to live sessions on the next request; › suspension revokes access immediately |
-| 10 | Clinical records remain accessible in a tested restore environment with proper encryption keys | `restore` (Phase 7 restore drill) |
+| 10 | Clinical records remain accessible in a tested restore environment with proper encryption keys | `restore` › a restored copy has the same records, an intact audit chain, and readable encrypted fields; › with the wrong data key the drill fails; first real drill recorded in `docs/operations.md` |
 
 ## Test matrix coverage (spec §14.1)
 
@@ -66,11 +66,11 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 | Unit | `packages/policy` (permissions), `packages/terminology` (ICD-11, name folding), `insights` (number check), money in minor units throughout |
 | API / contract | every module test: Zod field errors, status codes, error envelope (`security` › standard envelope) |
 | Concurrency | `admissions` (bed race), `appointments` (slot race), `billing` (duplicate charge, replayed payment), `pharmacy` (idempotent dispense), `inventory` (no negative stock) |
-| Integration | `webhook` (signed callbacks, retries), FHIR conformance (Phase 7) |
+| Integration | `webhook` (signed callbacks, retries), `fhir` (R4 conformance, scopes, branch and hospital isolation), `migration` (legacy import with reconciliation) |
 | Security | `security` (cross-tenant, injection, mass assignment, MFA bypass and replay, session reuse, headers), `phase1` (CSRF, grant ceiling) |
 | E2E | Browser walk-throughs per phase (recorded in each phase's summary); scripted clinical UAT in `docs/uat/clinical-uat.md` |
 | AI validation | `insights`, `h360` (numeric grounding, reproducibility, reviewer approval, privacy: no identifiers in outputs) |
-| Resilience | `restore` (Phase 7 backup and restore drill) |
+| Resilience | `restore` (encrypted backup, refusal on tampering, verified restore drill), `ops` (readiness); load test in `docs/operations.md` |
 | Accessibility | Labelled inputs and keyboard-reachable actions in all screens; a formal audit is still to be done |
 
 ## Needs people, not code

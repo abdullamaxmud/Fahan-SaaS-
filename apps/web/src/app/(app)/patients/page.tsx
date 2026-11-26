@@ -108,10 +108,17 @@ export default function PatientsPage() {
           title={t('Find a patient', 'Raadi bukaan')}
           actions={
             canDo(me, 'mpi', 'E') ? (
-              <Link className="btn h-8 px-2.5 text-xs" href="/patients/merges">
-                <GitMerge size={14} />
-                {t('Merge requests', 'Codsiyada isku-darka')}
-              </Link>
+              <>
+                <Link className="btn h-8 px-2.5 text-xs" href="/patients/merges">
+                  <GitMerge size={14} />
+                  {t('Merge requests', 'Codsiyada isku-darka')}
+                </Link>
+                {canDo(me, 'mpi', 'A') ? (
+                  <Link className="btn h-8 px-2.5 text-xs" href="/patients/import">
+                    {t('Import from legacy system', 'Ka soo dhoofi nidaamkii hore')}
+                  </Link>
+                ) : null}
+              </>
             ) : null
           }
         >

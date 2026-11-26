@@ -44,6 +44,12 @@ export function integrationRoutes(deps: Deps): Router {
     return c;
   }
 
+  /** Branch names for limiting a client; integration engineers do not otherwise read organisation settings. */
+  r.get('/branches', need(deps, 'intg', 'V'), async (req, res) => {
+    const list = await db(req).collection('branches').find({ tenantId: req.actor!.tenantId }, { projection: { code: 1, name: 1 } }).sort({ code: 1 }).toArray();
+    res.json({ data: list.map((b) => ({ id: id(b), code: b.code, name: b.name })) });
+  });
+
   r.get('/clients', need(deps, 'intg', 'V'), async (req, res) => {
     const list = await col(req).find({ tenantId: req.actor!.tenantId }).sort({ name: 1 }).toArray();
     res.json({ data: list.map(view) });

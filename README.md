@@ -2,7 +2,7 @@
 
 Multi-tenant SaaS hospital operating platform. Built from the *Advanced Hospital Management System Developer Documentation* (v1.0).
 
-**Status: Phase 6 — AI, BI & automation.**
+**Status: Phase 7 — Hardening & pilot.**
 
 - Phase 1 (done): identity, MFA, 55 roles, one database per hospital, organisation setup, tamper-evident audit trail.
 - Phase 2 (done): patient index with duplicate detection and reversible merges, consent, clinic schedules and appointments without double-booking, check-in queue, outpatient visits with vitals, signed and amended notes, ICD-11 diagnoses, patient timeline.
@@ -10,7 +10,8 @@ Multi-tenant SaaS hospital operating platform. Built from the *Advanced Hospital
 - Phase 4 (done): inventory by batch and expiry, laboratory with verification, QC and critical values, radiology and diagnostics with signed reports, equipment and calibration, pharmacy with allergy checks and idempotent dispensing, medication chart, blood bank with compatibility and traceability.
 - Phase 5 (done): double-entry ledger with period close, charges captured from clinical events, invoices, tills and idempotent payments, four-eyes refunds, signed mobile-money callbacks, insurance claims with denials and remittance, procurement with 3-way match, HR, rosters, leave and payroll.
 - Phase 6 (done): certified, versioned metrics; immutable monthly snapshots with fingerprints; disease counts per spec §9.3 with small-cohort suppression; AI finance and disease summaries whose every number is checked against the snapshot and released only after review; the signed monthly Hospital 360 report; a no-code forms studio with versions and rollback.
-- Next: Phase 7 — hardening and pilot (data migration, role testing, clinical UAT, penetration and restore tests).
+- Phase 7 (done in code): security sweep and MFA hardening, dependency fixes and CI, FHIR R4 read API with scoped clients, verified patient migration, encrypted backups with restore drills, readiness and metrics, access reviews and incidents. Evidence: `docs/traceability.md`, `docs/operations.md`; clinical UAT script in `docs/uat/clinical-uat.md`.
+- Next: Phase 8 — go-live: clinical UAT sign-off, independent penetration test, staging load and restore timing, controlled branch rollout.
 
 ## Layout
 

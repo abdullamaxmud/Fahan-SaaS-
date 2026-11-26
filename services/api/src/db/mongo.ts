@@ -184,6 +184,9 @@ export class Data {
       db.collection('migration_links').createIndex({ tenantId: 1, source: 1, legacyId: 1 }, { unique: true, name: 'one_import_per_legacy_id' }),
       db.collection('migration_rows').createIndex({ batchId: 1, rowNo: 1 }),
       db.collection('patients').createIndex({ 'migration.batchId': 1 }, { sparse: true }),
+      // Security operations (spec §5.35): one open access review at a time.
+      db.collection('access_reviews').createIndex({ tenantId: 1 }, { unique: true, partialFilterExpression: { status: 'Open' }, name: 'one_open_review' }),
+      db.collection('security_incidents').createIndex({ tenantId: 1, detectedAt: -1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),

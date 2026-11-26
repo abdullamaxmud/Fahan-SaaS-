@@ -119,6 +119,12 @@ export function migrationRoutes(deps: Deps): Router {
     return b;
   }
 
+  /** Branch names for choosing a home branch; records officers do not otherwise read organisation settings. */
+  r.get('/branches', need(deps, 'mpi', 'A'), async (req, res) => {
+    const list = await db(req).collection('branches').find({ tenantId: req.actor!.tenantId }, { projection: { code: 1, name: 1 } }).sort({ code: 1 }).toArray();
+    res.json({ data: list.map((b) => ({ id: id(b), code: b.code, name: b.name })) });
+  });
+
   r.get('/batches', need(deps, 'mpi', 'A'), async (req, res) => {
     const list = await batches(req).find({ tenantId: req.actor!.tenantId }).sort({ createdAt: -1 }).limit(50).toArray();
     res.json({ data: list.map(view) });
