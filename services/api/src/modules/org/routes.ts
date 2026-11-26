@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { isBranchBound } from '@fahan/policy';
+import { ROLE_BY_ID, can, effectivePermissions, isBranchBound } from '@fahan/policy';
 import { z } from 'zod';
 import type { Deps } from '../../context';
 import { Errors } from '../../lib/errors';
@@ -36,6 +36,17 @@ export function orgRoutes(deps: Deps): Router {
     const filter = isBranchBound(a.scope) && a.scope !== 'assigned-patient' ? { tenantId: a.tenantId, _id: { $in: a.branchId ? [a.branchId] : [] } } : { tenantId: a.tenantId, status: { $ne: 'Archived' } };
     const list = await a.db!.collection('branches').find(filter, { projection: { code: 1, name: 1, timezone: 1 } }).sort({ code: 1 }).limit(500).toArray();
     res.json({ data: list.map((b) => ({ id: b._id.toHexString(), code: b.code, name: b.name, timezone: b.timezone })) });
+  });
+
+  /** Clinical colleagues for pickers (care team, bedside second checker): names and roles only. */
+  r.get('/lookup/clinical-staff', async (req, res) => {
+    const a = req.actor!;
+    const users = await a.db!.collection('users').find({ tenantId: a.tenantId, status: 'Active', roles: { $nin: ['patient', 'caregiver', 'referring-provider'] } }, { projection: { name: 1, roles: 1, branchId: 1 } }).sort({ name: 1 }).limit(2000).toArray();
+    const clinical = (roles: string[]) => {
+      const p = effectivePermissions(roles);
+      return (['opd', 'nur', 'er', 'icu', 'mat', 'sx'] as const).some((m) => can(p, m, 'E'));
+    };
+    res.json({ data: users.filter((u) => clinical(u.roles as string[]) && (!a.branchId || !u.branchId || u.branchId.equals(a.branchId))).map((u) => ({ id: u._id.toHexString(), name: u.name, role: ROLE_BY_ID[(u.roles as string[])[0] ?? '']?.name ?? '' })) });
   });
 
   r.post('/branches', need(deps, 'org', 'E'), async (req, res) => {

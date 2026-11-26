@@ -94,6 +94,15 @@ const people: [string, string, string, boolean][] = [
   ['dpo', 'Amina Said', 'dpo', false],
   ['quality', 'Hodan Aw Ali', 'quality-officer', false],
   ['hadmin', 'Liban Warsame', 'hospital-admin', false],
+  ['icu', 'Dr. Khadar Jaamac', 'icu-team', true],
+  ['tele', 'Dr. Samira Nuur', 'tele-clinician', true],
+  ['ipc', 'Fartun Warsame', 'ipc', false],
+  ['cssd', 'Cabdi Xasan', 'facilities-cssd', true],
+  ['dxtech', 'Ayaan Faarax', 'dx-tech', true],
+  ['shiftlead', 'Sucaad Axmed', 'shift-lead', true],
+  ['peds', 'Dr. Nasra Cumar', 'pediatrician', true],
+  ['branchmgr', 'Guuleed Cabdi', 'branch-manager', true],
+  ['referrer', 'Dr. Axmed Kulmiye', 'referring-provider', true],
 ];
 const ids: Record<string, unknown> = {};
 for (const [key, name, role, branchBound] of people) {
@@ -137,7 +146,7 @@ await db.collection('vehicles').insertMany(
     ['AMB-07', 'basic'],
   ].map(([code, kind]) => ({ tenantId: t.insertedId, branchId: branch.insertedId, code, kind, status: 'Available', createdAt: now })),
 );
-for (const key of ['obs', 'midwife']) {
+for (const key of ['obs', 'midwife', 'tele', 'peds']) {
   await db.collection('provider_schedules').insertMany(
     [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ tenantId: t.insertedId, providerId: ids[key], branchId: branch.insertedId, weekday, start: '08:00', end: '16:00', slotMinutes: 30, createdAt: now })),
   );
@@ -167,6 +176,9 @@ await db.collection('assets').insertMany([
   { tenantId: tid, branchId: bid, code: 'XR-1', name: 'Digital X-ray room 1', kind: 'imaging', modality: 'XR', status: 'Available', createdAt: now },
   { tenantId: tid, branchId: bid, code: 'CT-1', name: 'CT scanner 64-slice', kind: 'imaging', modality: 'CT', status: 'Available', createdAt: now },
   { tenantId: tid, branchId: bid, code: 'ECG-1', name: '12-lead ECG', kind: 'diagnostic', modality: 'ECG', status: 'Available', createdAt: now },
+  { tenantId: tid, branchId: bid, code: 'AC-1', name: 'Steam steriliser (autoclave)', kind: 'autoclave', status: 'Available', nextCalibrationDue: nextYear, createdAt: now },
+  { tenantId: tid, branchId: bid, code: 'MON-01', name: 'ICU bedside monitor 1', kind: 'monitor', status: 'Available', nextCalibrationDue: nextYear, createdAt: now },
+  { tenantId: tid, branchId: bid, code: 'VENT-01', name: 'ICU ventilator 1', kind: 'ventilator', status: 'Available', nextCalibrationDue: nextYear, createdAt: now },
 ]);
 const unitExpiry = new Date(now.getTime() + 30 * 86_400_000).toISOString().slice(0, 10);
 await db.collection('blood_units').insertMany(
@@ -197,6 +209,23 @@ for (const [i, [g, m, f, dob, sex]] of pts.entries()) {
   });
 }
 await db.collection('counters').insertOne({ _id: `mrn:MGD:${yy}` as never, seq: pts.length });
+
+// Patient portal: the first patient can sign in to the portal with the same demo password.
+const firstPatient = await db.collection('patients').findOne({ tenantId: t.insertedId, mrn: `MGD-${yy}-000001` });
+await db.collection('users').insertOne({
+  tenantId: t.insertedId,
+  email: 'faadumo@patient.test',
+  name: 'Faadumo Cali Xasan',
+  roles: ['patient'],
+  patientIds: [firstPatient!._id],
+  portalLinks: [{ patientId: firstPatient!._id, relationship: 'self', invitedAt: now, approvedAt: now }],
+  status: 'Active',
+  passwordHash: pwHash,
+  createdAt: now,
+  activatedAt: now,
+  version: 1,
+});
+lines.push('', 'patient portal   faadumo@patient.test   (same password, no authenticator needed)');
 
 // ---- Phase 5: finance, insurance, procurement, HR ----
 await ensureChart(db, tid);

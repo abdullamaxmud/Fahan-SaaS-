@@ -161,7 +161,18 @@ export function bloodBankRoutes(deps: Deps): Router {
       if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
     }
     const list = await db(req).collection('transfusion_requests').find(f).sort({ requestedAt: 1 }).limit(300).toArray();
-    res.json({ data: list.map(({ _id, tenantId, ...x }) => ({ id: _id.toHexString(), ...x })) });
+    // Units issued for the bedside check, so the ward can pick the exact bag it is about to give.
+    const issued = await db(req)
+      .collection('blood_units')
+      .find({ tenantId: a.tenantId, reservedFor: { $in: list.map((x) => x._id) }, status: 'Issued' }, { projection: { unitNumber: 1, group: 1, reservedFor: 1 } })
+      .toArray();
+    res.json({
+      data: list.map(({ _id, tenantId, ...x }) => ({
+        id: _id.toHexString(),
+        ...x,
+        issuedUnits: issued.filter((u) => (u.reservedFor as typeof _id).equals(_id)).map((u) => ({ id: u._id.toHexString(), unitNumber: u.unitNumber, group: u.group })),
+      })),
+    });
   });
 
   /** Crossmatch: patient's group must be confirmed twice; every unit must be available, in date and compatible. */

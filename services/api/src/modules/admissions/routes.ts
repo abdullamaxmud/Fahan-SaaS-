@@ -57,14 +57,18 @@ export function admissionRoutes(deps: Deps): Router {
 
   // ---- wards & beds ----
 
-  r.get('/wards', need(deps, 'bed', 'V'), async (req, res) => {
+  /** The bed board: ward staff, nurses and admitting staff all need it to place and find patients. */
+  r.get('/wards', async (req, res) => {
     const a = req.actor!;
+    const sees = (m: 'bed' | 'adm' | 'nur') => can(a.perms, m, 'V') && !a.disabledModules?.includes(m);
+    if (!sees('bed') && !sees('adm') && !sees('nur')) await deny(deps, req, 'bed', 'requires bed, admissions or nursing');
     const wf: Document = { tenantId: a.tenantId };
     if (isBranchBound(a.scope)) wf.branchId = a.branchId ?? null;
     const wards = await db(req).collection('wards').find(wf).sort({ code: 1 }).toArray();
     const beds = await db(req).collection('beds').find({ tenantId: a.tenantId, wardId: { $in: wards.map((w) => w._id) } }).sort({ code: 1 }).toArray();
     const asg = await db(req).collection('bed_assignments').find({ tenantId: a.tenantId, bedId: { $in: beds.map((b) => b._id) }, active: true }).toArray();
     const pats = await db(req).collection('patients').find({ _id: { $in: asg.map((x) => x.patientId) } }, { projection: { names: 1, mrn: 1, dob: 1, sexAtBirth: 1 } }).toArray();
+    const admEnc = await db(req).collection('admissions').find({ _id: { $in: asg.map((x) => x.admissionId) } }, { projection: { encounterId: 1 } }).toArray();
     const named = seesNames(req);
     res.json({
       data: wards.map((w) => ({
@@ -84,6 +88,7 @@ export function admissionRoutes(deps: Deps): Router {
               room: b.room ?? null,
               status: b.status,
               admissionId: x?.admissionId.toHexString() ?? null,
+              encounterId: (x && named ? admEnc.find((y) => y._id.equals(x.admissionId))?.encounterId?.toHexString() : null) ?? null,
               patient: p
                 ? named
                   ? { id: id(p), mrn: p.mrn, names: p.names, dob: p.dob, sexAtBirth: p.sexAtBirth ?? null }
@@ -192,6 +197,17 @@ export function admissionRoutes(deps: Deps): Router {
         };
       }),
     });
+  });
+
+  /** Doctors who can take an inpatient as attending (same rule as admission). */
+  r.get('/admissions/attendings', need(deps, 'adm', 'V'), async (req, res) => {
+    const a = req.actor!;
+    const users = await db(req).collection('users').find({ tenantId: a.tenantId, status: 'Active' }, { projection: { name: 1, roles: 1, branchId: 1 } }).sort({ name: 1 }).toArray();
+    const ok = (roles: string[]) => {
+      const p = effectivePermissions(roles);
+      return can(p, 'opd', 'S') || can(p, 'icu', 'S') || can(p, 'mat', 'S');
+    };
+    res.json({ data: users.filter((u) => ok(u.roles as string[]) && (!isBranchBound(a.scope) || !u.branchId || u.branchId.equals(a.branchId ?? null))).map((u) => ({ id: id(u), name: u.name })) });
   });
 
   r.post('/admissions', need(deps, 'adm', 'E'), async (req, res) => {

@@ -109,12 +109,25 @@ async function tenantCounts(deps: Deps, req: Request): Promise<Record<string, nu
   if (can(p, 'rad', 'E') && staffQueue) count('radOpen', 'imaging_orders', { ...bf, status: { $in: ['Ordered', 'Scheduled'] } });
   if (can(p, 'rad', 'A')) count('radToReport', 'imaging_orders', { ...bf, status: { $in: ['Acquired', 'Interpreted'] } });
   if (can(p, 'dx', 'E') && staffQueue) count('dxOpen', 'diagnostic_orders', { ...bf, status: { $in: ['Ordered', 'Scheduled', 'Acquired'] } });
-  if (can(p, 'rx', 'S') && staffQueue) {
+  if (can(p, 'rx', 'S') && can(p, 'inv', 'V') && staffQueue) {
     count('rxToVerify', 'prescriptions', { ...bf, status: 'Signed' });
     count('rxToDispense', 'prescriptions', { ...bf, status: 'Verified' });
   }
-  if (can(p, 'inv', 'V')) count('expiringLots', 'stock_lots', { quantity: { $gt: 0 }, expiry: { $gt: today, $lte: inDays(90) } });
-  if (can(p, 'bb', 'V')) count('bbRequests', 'transfusion_requests', { status: { $in: ['Requested', 'Matched'] } });
+  if (can(p, 'inv', 'V')) {
+    count('expiringLots', 'stock_lots', { quantity: { $gt: 0 }, expiry: { $gt: today, $lte: inDays(90) } });
+    // Items below their reorder level, counting only stock that has not expired.
+    jobs.push(
+      (async () => {
+        const items = await db.collection('items').find({ tenantId: tid, reorderLevel: { $gt: 0 } }, { projection: { reorderLevel: 1 } }).toArray();
+        const have = await db
+          .collection('stock_lots')
+          .aggregate([{ $match: { tenantId: tid, itemId: { $in: items.map((i) => i._id) }, quantity: { $gt: 0 }, expiry: { $gt: today } } }, { $group: { _id: '$itemId', n: { $sum: '$quantity' } } }])
+          .toArray();
+        out.lowStock = items.filter((i) => (have.find((x) => (x._id as { equals(o: unknown): boolean }).equals(i._id))?.n ?? 0) < (i.reorderLevel as number)).length;
+      })().catch(() => undefined),
+    );
+  }
+  if (can(p, 'bb', 'S')) count('bbRequests', 'transfusion_requests', { status: { $in: ['Requested', 'Matched'] } });
   if (can(p, 'eq', 'V')) {
     count('eqDown', 'assets', { ...bf, status: 'OutOfService' });
     count('calibrationDue', 'assets', { ...bf, nextCalibrationDue: { $lte: inDays(14) } });
@@ -173,6 +186,7 @@ async function tenantCounts(deps: Deps, req: Request): Promise<Record<string, nu
     count('usersActive', 'users', { ...bf, status: 'Active', roles: { $nin: ['patient', 'caregiver'] } });
     count('usersInvited', 'users', { ...bf, status: 'Invited' });
   }
+  if (can(p, 'studio', 'E')) count('formsDraft', 'form_definitions', { status: { $in: ['Draft', 'Tested'] } });
   if (can(p, 'studio', 'A')) count('formsToApprove', 'form_definitions', { status: 'Tested' });
   if (can(p, 'qual', 'A')) count('formsSafety', 'form_definitions', { status: 'Tested', highRisk: true, safetySignoff: null });
   if (can(p, 'sec', 'V')) {

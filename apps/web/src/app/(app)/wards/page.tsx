@@ -2,19 +2,21 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { BedDouble } from 'lucide-react';
+import { BedDouble, ClipboardList, Plus, Settings2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
 import { useReauth } from '@/components/Reauth';
 import { fullName, type PatientBrief } from '@/components/clinical';
 import { Card, ErrorNote, PageHeader, Pill, statusTone, useAction } from '@/components/ui';
+import { AdmitDrawer, CareDrawer, HandoverDrawer, WardSetupDrawer, patientLabel } from '@/components/WardPanels';
 
 interface Bed {
   id: string;
   code: string;
   status: string;
   admissionId: string | null;
+  encounterId?: string | null;
   patient: (PatientBrief & { initials?: string }) | { initials: string } | null;
 }
 interface Ward {
@@ -55,6 +57,10 @@ export default function WardsPage() {
   const { guarded, dialog } = useReauth();
   const canBeds = canDo(me, 'bed', 'E') || canDo(me, 'adm', 'E');
   const canDischarge = canDo(me, 'opd', 'S') || canDo(me, 'icu', 'S') || canDo(me, 'mat', 'S');
+  const [admitting, setAdmitting] = useState(false);
+  const [setup, setSetup] = useState(false);
+  const [care, setCare] = useState<{ admissionId: string; encounterId: string | null; patient: string } | null>(null);
+  const [handover, setHandover] = useState<Ward | null>(null);
 
   const refresh = useCallback(async () => {
     await load.run(async () => {
@@ -82,6 +88,9 @@ export default function WardsPage() {
       setPick(null);
     } else if (b.status === 'Cleaning' && canBeds) {
       await run(() => api(`/beds/${b.id}/status`, { body: { status: 'Available' } }));
+    } else if (b.status === 'Occupied' && b.admissionId && canDo(me, 'nur', 'V')) {
+      const adm = adms.find((x) => x.id === b.admissionId);
+      setCare({ admissionId: b.admissionId, encounterId: adm?.encounterId ?? b.encounterId ?? null, patient: patientLabel(b.patient as never) });
     }
   }
 
@@ -90,8 +99,26 @@ export default function WardsPage() {
   return (
     <>
       {dialog}
-      <PageHeader title={t('Wards & beds', 'Qolalka & sariiraha')}>
-        {t('Pick an admission, then click a free bed.', 'Dooro dhigis, kadib guji sariir bannaan.')}
+      <PageHeader
+        title={t('Wards & beds', 'Qolalka & sariiraha')}
+        actions={
+          <>
+            {canDo(me, 'bed', 'A') ? (
+              <button className="btn" onClick={() => setSetup(true)}>
+                <Settings2 size={16} />
+                {t('Set up wards', 'Habee qolalka')}
+              </button>
+            ) : null}
+            {canDo(me, 'adm', 'E') ? (
+              <button className="btn btn-primary" onClick={() => setAdmitting(true)}>
+                <Plus size={16} />
+                {t('Admit a patient', 'Dhig bukaan')}
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        {t('Admit, give a bed, then click a patient’s bed for nursing care.', 'Dhig, sii sariir, kadib guji sariirta bukaanka si aad u daryeesho.')}
       </PageHeader>
       {pick ? (
         <div className="flex items-center gap-3 rounded-[10px] bg-info-soft px-4 py-2.5 text-[13px] text-info">
@@ -107,7 +134,23 @@ export default function WardsPage() {
       {wards.map((w) => {
         const occ = w.beds.filter((b) => b.status === 'Occupied').length;
         return (
-          <Card key={w.id} title={`${w.code} · ${w.name}`} actions={<span className="text-xs text-ink-3">{occ}/{w.beds.length} {t('occupied', 'buuxa')} · {w.kind}</span>}>
+          <Card
+            key={w.id}
+            title={`${w.code} · ${w.name}`}
+            actions={
+              <>
+                <span className="text-xs text-ink-3">
+                  {occ}/{w.beds.length} {t('occupied', 'buuxa')}
+                </span>
+                {canDo(me, 'nur', 'V') ? (
+                  <button className="btn h-8 px-2.5 text-xs" onClick={() => setHandover(w)}>
+                    <ClipboardList size={14} />
+                    {t('Handover', 'Wareejin')}
+                  </button>
+                ) : null}
+              </>
+            }
+          >
             <div className="grid grid-cols-2 gap-2 px-4 pb-4 sm:grid-cols-4 lg:grid-cols-6">
               {w.beds.map((b) => (
                 <button key={b.id} onClick={() => onBed(b)} className={`flex min-h-20 flex-col gap-0.5 rounded-[10px] border p-2 text-left text-xs ${BED_STYLE[b.status] ?? ''} ${pick && b.status === 'Available' ? 'ring-2 ring-accent' : ''}`}>
@@ -162,7 +205,11 @@ export default function WardsPage() {
                             {t('Transfer', 'U wareeji')}
                           </button>
                         ) : null}
-                        {a.encounterId && canDo(me, 'nur', 'V') ? (
+                        {a.status === 'Admitted' && canDo(me, 'nur', 'V') ? (
+                          <button className="btn h-7 px-2.5 text-xs" onClick={() => setCare({ admissionId: a.id, encounterId: a.encounterId, patient: a.patient ? fullName(a.patient.names) : '' })}>
+                            {t('Care', 'Daryeel')}
+                          </button>
+                        ) : a.encounterId && canDo(me, 'opd', 'V') ? (
                           <Link className="btn h-7 px-2.5 text-xs" href={`/encounters/${a.encounterId}`}>
                             {t('Chart', 'Kaarka')}
                           </Link>
@@ -209,6 +256,22 @@ export default function WardsPage() {
             </table>
           </div>
         </Card>
+      ) : null}
+
+      {!wards.length && !load.busy ? (
+        <Card>
+          <p className="px-4 py-8 text-center text-[13.5px] text-ink-3">{canDo(me, 'bed', 'A') ? t('No wards yet. Use “Set up wards” to add the first one.', 'Weli qol ma jiro. Isticmaal “Habee qolalka”.') : t('No wards have been set up yet.', 'Weli qolal lama habeyn.')}</p>
+        </Card>
+      ) : null}
+      {admitting ? <AdmitDrawer onClose={() => setAdmitting(false)} onDone={async () => { setAdmitting(false); await refresh(); }} /> : null}
+      {setup ? <WardSetupDrawer wards={wards} onClose={() => setSetup(false)} onDone={refresh} /> : null}
+      {care ? <CareDrawer {...care} onClose={() => setCare(null)} /> : null}
+      {handover ? (
+        <HandoverDrawer
+          ward={handover}
+          patients={handover.beds.filter((b) => b.admissionId && b.patient).map((b) => ({ admissionId: b.admissionId!, name: patientLabel(b.patient as never), bed: b.code }))}
+          onClose={() => setHandover(null)}
+        />
       ) : null}
     </>
   );

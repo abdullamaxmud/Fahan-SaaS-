@@ -67,6 +67,26 @@ export function surgeryRoutes(deps: Deps): Router {
     return u;
   }
 
+  /** Surgeons and anaesthetists who can be put on a case (same rules as booking). */
+  r.get('/team', need(deps, 'sx', 'V'), async (req, res) => {
+    const users = await db(req).collection('users').find({ tenantId: req.actor!.tenantId, status: 'Active' }, { projection: { name: 1, roles: 1 } }).sort({ name: 1 }).toArray();
+    const p = (u: Document) => effectivePermissions(u.roles as string[]);
+    res.json({
+      data: {
+        surgeons: users.filter((u) => can(p(u), 'sx', 'S') && !can(p(u), 'icu', 'E')).map((u) => ({ id: id(u), name: u.name })),
+        anesthetists: users.filter((u) => can(p(u), 'sx', 'S') && can(p(u), 'icu', 'E')).map((u) => ({ id: id(u), name: u.name })),
+      },
+    });
+  });
+
+  r.get('/theatres', need(deps, 'sx', 'V'), async (req, res) => {
+    const a = req.actor!;
+    const f: Document = { tenantId: a.tenantId };
+    if (isBranchBound(a.scope)) f.branchId = a.branchId ?? null;
+    const list = await db(req).collection('theatres').find(f).sort({ code: 1 }).toArray();
+    res.json({ data: list.map((t) => ({ id: id(t), code: t.code, name: t.name, status: t.status, statusReason: t.statusReason ?? null })) });
+  });
+
   r.post('/theatres', need(deps, 'org', 'E'), async (req, res) => {
     const body = parse(NewTheatre, req.body);
     await assertBranch(deps, req, body.branchId);

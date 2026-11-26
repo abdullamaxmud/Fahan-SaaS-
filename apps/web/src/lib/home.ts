@@ -57,6 +57,7 @@ export const TASKS: Record<string, TaskDef> = {
   eqDown: tk('Devices out of service', 'Qalab aan shaqaynayn', '/equipment', 'wrench', 'warn'),
   calibrationDue: tk('Calibrations due soon', 'Hagaajin qalab oo dhow', '/equipment', 'gauge'),
   cssdOpen: tk('Sterilisation loads running', 'Nadiifin qalab socota', '/equipment', 'flame'),
+  lowStock: tk('Items below reorder level', 'Alaab ka hoosaysa heerka dalabka', '/inventory', 'package-minus', 'warn'),
   expiringLots: tk('Stock batches expiring in 90 days', 'Kayd dhacaya 90 maalmood', '/inventory', 'package'),
   incidentsOpen: tk('Safety incidents open', 'Dhacdooyin badbaado oo furan', '/quality', 'clipboard-check', 'warn'),
   ipcOpen: tk('Infection cases under review', 'Kiisas infekshan', '/quality', 'bug', 'warn'),
@@ -66,6 +67,7 @@ export const TASKS: Record<string, TaskDef> = {
   h360ToApprove: tk('Monthly report to approve', 'Warbixinta bisha oo la ansixiyo', '/hospital-360', 'file-check', 'warn'),
   formsSafety: tk('Forms needing safety sign-off', 'Foomam u baahan ansixin badbaado', '/studio', 'shield-alert', 'warn'),
   formsToApprove: tk('Forms to approve', 'Foomam la ansixiyo', '/studio', 'workflow'),
+  formsDraft: tk('Forms being built', 'Foomam la dhisayo', '/studio', 'pencil-ruler'),
   usersInvited: tk('Invitations not yet accepted', 'Casuumaado aan la aqbalin', '/admin/users', 'mail'),
   breakGlassToReview: tk('Emergency access to review', 'Gelitaan degdeg ah oo la eego', '/admin/break-glass', 'shield-alert', 'warn'),
   securityOpen: tk('Security incidents open', 'Dhacdooyin amni', '/admin/security', 'lock', 'warn'),
@@ -96,6 +98,7 @@ export interface QuickAction {
   href: string;
   icon: string;
   need: [ModuleKey, Level];
+  also?: [ModuleKey, Level];
   staffOnly?: boolean;
 }
 export const QUICK: QuickAction[] = [
@@ -105,10 +108,12 @@ export const QUICK: QuickAction[] = [
   { en: 'New emergency arrival', so: 'Bukaan gurmad cusub', href: '/emergency', icon: 'siren', need: ['er', 'E'] },
   { en: 'Admit a patient', so: 'Dhig bukaan', href: '/wards', icon: 'bed-double', need: ['adm', 'E'] },
   { en: 'Lab worklist', so: 'Liiska shaybaarka', href: '/lab', icon: 'flask-conical', need: ['lab', 'E'], staffOnly: true },
-  { en: 'Dispense medicines', so: 'Bixi daawo', href: '/pharmacy', icon: 'pill', need: ['rx', 'S'], staffOnly: true },
+  { en: 'Dispense medicines', so: 'Bixi daawo', href: '/pharmacy', icon: 'pill', need: ['rx', 'S'], also: ['inv', 'V'], staffOnly: true },
   { en: 'Take a payment', so: 'Qaado lacag', href: '/billing', icon: 'wallet', need: ['bill', 'E'] },
   { en: 'Receive stock', so: 'Qaado kayd', href: '/inventory', icon: 'package-plus', need: ['inv', 'E'] },
   { en: 'New purchase order', so: 'Dalab iib cusub', href: '/procurement', icon: 'truck', need: ['proc', 'E'] },
   { en: 'Invite staff', so: 'Casuun shaqaale', href: '/admin/users', icon: 'user-plus', need: ['iam', 'E'] },
+  { en: 'Build a form', so: 'Dhis foom', href: '/studio', icon: 'workflow', need: ['studio', 'E'] },
+  { en: 'Report an incident', so: 'Soo sheeg dhacdo', href: '/quality/report', icon: 'triangle-alert', need: ['qual', 'V'] },
   { en: 'Month figures', so: 'Tirooyinka bisha', href: '/reports', icon: 'bar-chart-3', need: ['bi', 'V'] },
 ];

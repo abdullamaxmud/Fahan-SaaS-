@@ -7,6 +7,7 @@ import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
 import { useReauth } from './Reauth';
 import { Card, ErrorNote, Pill, useAction } from './ui';
+import { BloodOrders } from './BloodOrders';
 
 interface LabOrder {
   id: string;
@@ -322,6 +323,7 @@ export function OrdersPanel({ encounterId, closed, canOrder, canChart }: { encou
             </form>
           ) : null}
         </section>
+        <BloodOrders encounterId={encounterId} closed={closed} />
       </div>
     </Card>
   );

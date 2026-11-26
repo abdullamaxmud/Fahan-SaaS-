@@ -5,6 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { fullName, type PatientBrief } from '@/components/clinical';
+import { Plus } from 'lucide-react';
+import { canDo, useMe } from '@/lib/session';
+import { BookCase } from '@/components/BookCase';
 import { Card, ErrorNote, PageHeader, Pill, useAction } from '@/components/ui';
 
 interface Theatre {
@@ -23,6 +26,8 @@ const TONE: Record<string, string> = { Planned: 'bg-info-soft text-info', Prepar
 
 export default function SurgeryPage() {
   const { t } = useLang();
+  const { me } = useMe();
+  const [booking, setBooking] = useState(false);
   const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [theatres, setTheatres] = useState<Theatre[]>([]);
   const load = useAction();
@@ -37,10 +42,22 @@ export default function SurgeryPage() {
 
   return (
     <>
-      <PageHeader title={t('Theatres', 'Qalliinka')}>
+      <PageHeader
+        title={t('Theatres', 'Qalliinka')}
+        actions={
+          <>
+            <input className="input h-9 w-auto" type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label={t('Date', 'Taariikh')} />
+            {canDo(me, 'sx', 'E') ? (
+              <button className="btn btn-primary" onClick={() => setBooking(true)}>
+                <Plus size={16} />
+                {t('Book a case', 'Qabso qalliin')}
+              </button>
+            ) : null}
+          </>
+        }
+      >
         {t('Theatre schedule and surgical cases.', 'Jadwalka qolalka qalliinka iyo kiisaska.')}
       </PageHeader>
-      <input className="input h-9 w-auto self-start" type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date" />
       <ErrorNote error={load.error} />
       <Card title={t('Day schedule · 07:00–19:00', 'Jadwalka maalinta')}>
         <div className="grid gap-2 overflow-x-auto px-4 pb-4">
@@ -86,6 +103,17 @@ export default function SurgeryPage() {
           )}
         </ul>
       </Card>
+      {booking ? (
+        <BookCase
+          date={date}
+          theatres={theatres}
+          onClose={() => setBooking(false)}
+          onDone={async () => {
+            setBooking(false);
+            await refresh();
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -175,8 +175,34 @@ export default function SurgeryCasePage({ params }: { params: Promise<{ id: stri
               ))}
             </ol>
           </Card>
+          {c.status === 'Planned' || c.status === 'Prepared' ? <CancelCase id={id} onDone={() => run(async () => true)} /> : null}
         </div>
       </div>
     </>
+  );
+}
+
+function CancelCase({ id, onDone }: { id: string; onDone: () => Promise<unknown> }) {
+  const { t } = useLang();
+  const [reason, setReason] = useState('');
+  const act = useAction();
+  return (
+    <Card title={t('Cancel this case', 'Jooji kiiskan')}>
+      <div className="flex gap-2 px-4 pb-4">
+        <input className="input h-9 flex-1" placeholder={t('Reason', 'Sababta')} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <button
+          className="btn h-9"
+          disabled={reason.trim().length < 3 || act.busy}
+          onClick={async () => {
+            if ((await act.run(() => api(`/surgery/cases/${id}/cancel`, { body: { reason } }))) !== undefined) await onDone();
+          }}
+        >
+          {t('Cancel case', 'Jooji')}
+        </button>
+      </div>
+      <div className="px-4 pb-3">
+        <ErrorNote error={act.error} />
+      </div>
+    </Card>
   );
 }

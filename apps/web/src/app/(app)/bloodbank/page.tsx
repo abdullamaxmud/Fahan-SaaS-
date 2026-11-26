@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { useLang } from '@/lib/i18n';
 import { canDo, useMe } from '@/lib/session';
 import { Card, ErrorNote, PageHeader, Pill, useAction } from '@/components/ui';
+import { BloodTyping } from '@/components/BloodTyping';
 
 interface Unit {
   id: string;
@@ -143,11 +144,23 @@ export default function BloodBankPage() {
                   <span className="ml-auto flex items-center gap-2">
                     <span className={`num text-xs ${u.expired ? 'text-crit' : 'text-ink-3'}`}>{u.expiry}</span>
                     <Pill tone={u.status === 'Available' ? 'ok' : u.status === 'Transfused' ? 'plain' : 'info'}>{u.status}</Pill>
+                    {staff && (u.status === 'Available' || u.expired) && u.status !== 'Discarded' ? (
+                      <button
+                        className="btn h-7 px-2 text-xs"
+                        onClick={() => {
+                          const reason = window.prompt(t('Why is this unit discarded?', 'Maxaa loo tuurayaa?'), u.expired ? t('Expired', 'Wuu dhacay') : '');
+                          if (reason && reason.trim().length >= 3) void run(() => api(`/bloodbank/units/${u.id}/discard`, { body: { reason } }));
+                        }}
+                      >
+                        {t('Discard', 'Tuur')}
+                      </button>
+                    ) : null}
                   </span>
                 </li>
               ))}
             </ul>
           </Card>
+          {staff ? <BloodTyping /> : null}
           {staff ? (
             <Card title={t('Receive unit', 'Qaabil unug')}>
               <form

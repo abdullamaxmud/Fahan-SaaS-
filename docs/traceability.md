@@ -8,8 +8,8 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 
 | § | Module | Status | API (`services/api/src/modules`) | Screen (`apps/web`) | Tests (`services/api/test`) |
 |---|---|---|---|---|---|
-| 5.1 | Organization & facilities | Built | `org` | `/admin/branches` | `phase1` |
-| 5.2 | Identity, roles & permissions | Built | `auth`, `iam`, `packages/policy` | `/admin/users` | `phase1`, `security`, policy package |
+| 5.1 | Organization & facilities | Built — branches, departments, hospital profile, module switchboard | `org`, `settings` | `/admin/branches` | `phase1`, `admin` |
+| 5.2 | Identity, roles & permissions | Built — incl. MFA reset with dual control, re-invitation, plain-words access preview | `auth`, `iam`, `packages/policy` | `/admin/users` | `phase1`, `security`, `admin`, policy package |
 | 5.3 | Registration & MPI | Built | `patients`, `migrations` | `/patients`, `/patients/merges`, `/patients/import` | `mpi`, `migration` |
 | 5.4 | Appointments & queues | Built | `appointments` | `/appointments` | `appointments` |
 | 5.5 | Outpatient encounters | Built | `encounters` | `/encounters` | `encounters` |
@@ -17,7 +17,7 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 | 5.7 | Inpatient admissions & discharge | Built | `admissions` | `/wards` | `admissions` |
 | 5.8 | Ward, room & bed management | Built | `admissions` | `/wards` | `admissions` |
 | 5.9 | Nursing & vitals | Built | `nursing`, `encounters` | `/wards` | `nursing`, `encounters` |
-| 5.10 | ICU / NICU / PICU | Partial — device readings and charting; no device integration | `nursing` | `/wards` | `nursing` |
+| 5.10 | ICU / NICU / PICU | Built — stays, labelled devices, provenance trends, daily review; live device interfaces need vendor contracts | `icu`, `encounters` | `/icu` | `icu` |
 | 5.11 | Laboratory / LIS | Partial — no analyser (LIS) adapter | `lab` | `/lab` | `lab` |
 | 5.12 | Radiology / RIS | Partial — no live PACS/DICOMweb connection | `imaging` | `/radiology` | `imaging` |
 | 5.13 | ECG, echo, endoscopy | Built | `imaging` | `/diagnostics` | `imaging` |
@@ -31,11 +31,11 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 | 5.21 | Insurance & claims | Built | `insurance` | `/insurance` | `insurance` |
 | 5.22 | HR, scheduling & payroll | Built | `hr` | `/hr` | `hr` |
 | 5.23 | Procurement & suppliers | Built | `procurement` | `/procurement` | `procurement` |
-| 5.24 | Equipment, CSSD & facilities | Partial — equipment and calibration; CSSD cycles not built | `equipment` | `/equipment` | `equipment` |
+| 5.24 | Equipment, CSSD & facilities | Built — devices, maintenance, calibration, CSSD sterilisation loads with release and recall | `equipment` | `/equipment` | `equipment`, `icu` |
 | 5.25 | Ambulance & referrals | Built | `referrals` | `/referrals` | `referrals` |
-| 5.26 | Patient portal & communications | **Not built** | — | — | — |
-| 5.27 | Telemedicine | **Not built** | — | — | — |
-| 5.28 | Quality, infection control & incidents | **Not built** (shown as "unavailable" in reports) | — | — | — |
+| 5.26 | Patient portal & communications | Built — portal accounts and proxies, booking, shared results, bills, consents, secure messages, video visits | `portal` | `/portal`, `/messages`, patient record | `portal` |
+| 5.27 | Telemedicine | Built — booking, consent, video room, visit joins the record | `telemedicine` | `/telemedicine` | `telemedicine`, `portal` |
+| 5.28 | Quality, infection control & incidents | Built — confidential incidents, infection cases, trends | `quality` | `/quality`, `/quality/report` | `quality` |
 | 5.29 | Reporting & BI | Built | `intel` | `/reports` | `intel` |
 | 5.30 | AI financial intelligence | Built | `intel/insights` | `/ai-finance` | `insights` |
 | 5.31 | AI disease intelligence | Built | `intel/insights` | `/ai-disease` | `intel`, `insights` |
@@ -43,6 +43,23 @@ Legend: **Built** — implemented and tested · **Partial** — core implemented
 | 5.33 | Forms & workflow studio | Partial — approval rules; no notification triggers | `studio` | `/studio`, `/forms` | `studio` |
 | 5.34 | Integrations & developer API | Partial — FHIR R4 read facade, scoped clients, signed payment webhooks; no HL7 v2 / DICOMweb adapters or FHIR writes | `fhir`, `integrations`, `billing/webhook` | `/admin/integrations` | `fhir`, `webhook` |
 | 5.35 | Security, audit & operations | Built — hash-chained audit, access reviews, incidents, backups and restore drill, readiness and metrics; SIEM export not built | `audit`, `security`, `ops` | `/admin/audit`, `/admin/security` | `phase1`, `security`, `secops`, `restore`, `ops` |
+
+## Super Admin console (spec §3.3)
+
+| Requirement | Where |
+|---|---|
+| Organisation and branch setup; departments, wards, services, price catalogue | `/admin/branches`, `/wards` (ward manager), `/billing` prices |
+| Role builder view and effective permission preview | `/admin/users` roles tab and person panel (plain-words access list) |
+| Module and feature switchboard | `/admin/branches` → Modules; enforced in `middleware/authorize.ts`; test `admin` |
+| No-code forms with versions and approval | `/studio`; test `studio` |
+| Identity governance: invitations, suspension, session revocation, MFA reset with dual control | `/admin/users`; tests `phase1`, `admin` |
+| Audit explorer and exceptional-access review | `/admin/audit`, `/admin/break-glass` |
+| Integration registry | `/admin/integrations` |
+| Backup and operational health | `docs/operations.md`, `/health/ready`, `/metrics` |
+
+## Role coverage
+
+Every demo role (52 hospital roles plus the patient portal) was signed in and every screen in its sidebar was opened through the API with no refusal or error (script run recorded in ADR 0008). Each role has a home screen with its own work counts and shortcuts.
 
 ## Mandatory acceptance scenarios (spec §14.2)
 

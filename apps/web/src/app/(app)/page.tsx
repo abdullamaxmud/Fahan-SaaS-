@@ -44,7 +44,7 @@ export default function HomePage() {
   const ownPatients = me.scope === 'assigned-patient' || me.scope === 'own-record';
   const tasks = Object.keys(TASKS).filter((k) => (counts?.[k] ?? 0) > 0);
   const stats = Object.keys(STATS).filter((k) => counts && k in counts);
-  const quick = QUICK.filter((q) => can(me.perms, q.need[0], q.need[1]) && !(q.staffOnly && ownPatients) && !me.disabledModules?.includes(q.need[0])).slice(0, 6);
+  const quick = QUICK.filter((q) => can(me.perms, q.need[0], q.need[1]) && (!q.also || can(me.perms, q.also[0], q.also[1])) && !(q.staffOnly && ownPatients) && !me.disabledModules?.includes(q.need[0])).slice(0, 6);
   const beds = counts && 'bedsFree' in counts ? (counts.bedsFree ?? 0) + (counts.bedsOccupied ?? 0) + (counts.bedsCleaning ?? 0) : 0;
   const date = new Intl.DateTimeFormat(lang === 'so' ? 'so-SO' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 

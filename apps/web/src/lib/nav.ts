@@ -11,6 +11,8 @@ export interface NavItem {
   staffOnly?: boolean;
   /** Also shown with this module at this level (e.g. reception books video visits through appointments). */
   alt?: [ModuleKey, Level];
+  /** Every one of these is also required (e.g. the pharmacy screen is for pharmacy staff who also handle stock). */
+  all?: [ModuleKey, Level][];
 }
 export interface NavGroup {
   en: string;
@@ -54,9 +56,9 @@ export const NAV: NavGroup[] = [
     en: 'Diagnostics',
     so: 'Baaritaanka',
     items: [
-      i('/lab', 'Laboratory', 'Shaybaarka', 'flask-conical', ['lab'], true),
-      i('/radiology', 'Radiology', 'Raajada', 'scan-line', ['rad'], true),
-      i('/diagnostics', 'ECG & echo', 'ECG & echo', 'waves', ['dx'], true),
+      { ...i('/lab', 'Laboratory', 'Shaybaarka', 'flask-conical', ['lab'], true), all: [['lab', 'E']] },
+      { ...i('/radiology', 'Radiology', 'Raajada', 'scan-line', ['rad'], true), all: [['rad', 'E']] },
+      { ...i('/diagnostics', 'ECG & echo', 'ECG & echo', 'waves', ['dx'], true), all: [['dx', 'E']] },
       i('/bloodbank', 'Blood bank', 'Bangiga dhiigga', 'droplet', ['bb'], true),
     ],
   },
@@ -64,7 +66,7 @@ export const NAV: NavGroup[] = [
     en: 'Pharmacy & stores',
     so: 'Farmashiyaha & bakhaarka',
     items: [
-      i('/pharmacy', 'Pharmacy', 'Farmashiyaha', 'pill', ['rx'], true),
+      { ...i('/pharmacy', 'Pharmacy', 'Farmashiyaha', 'pill', ['rx'], true), all: [['rx', 'S'], ['inv', 'V']] },
       i('/inventory', 'Inventory', 'Kaydka', 'package', ['inv']),
       i('/procurement', 'Procurement', 'Iibsiga', 'truck', ['proc']),
       i('/equipment', 'Equipment & CSSD', 'Qalabka & CSSD', 'wrench', ['eq']),
@@ -119,7 +121,8 @@ export function navFor(perms: Permissions, opts: { platform: boolean; ownPatient
       (x) =>
         (x.any.some((m) => perms[m] && !off.has(m)) || (x.alt && can(perms, x.alt[0], x.alt[1]) && !off.has(x.any[0] ?? x.alt[0]))) &&
         (!opts.platform || PLATFORM_PAGES.has(x.href)) &&
-        !(x.staffOnly && opts.ownPatients),
+        !(x.staffOnly && opts.ownPatients) &&
+        (x.all ?? []).every(([m, l]) => can(perms, m, l)),
     ),
   })).filter((g) => g.items.length);
 }
