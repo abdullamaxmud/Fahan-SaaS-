@@ -8,6 +8,7 @@ import { idParam, parse } from '../../lib/validate';
 import { audit } from '../../middleware/audit';
 import { need } from '../../middleware/authorize';
 import { assertRecentMfa } from '../../middleware/session';
+import { computeFinance } from '../intel/metrics';
 import { CURRENCIES, balances, ensureChart, postEntry, reverseEntry, type Currency } from './ledger';
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
@@ -161,35 +162,20 @@ export function accountingRoutes(deps: Deps): Router {
    */
   r.get('/summary', need(deps, 'acct', 'V'), async (req, res) => {
     const q = parse(Report, req.query);
-    const a = req.actor!;
-    const d = db(req);
-    const inMonth = { $gte: `${q.period}-01`, $lte: `${q.period}-31` };
-    const inv = await d.collection('invoices').find({ tenantId: a.tenantId, currency: q.currency, status: { $nin: ['Draft', 'Voided'] }, issuedOn: inMonth }).toArray();
-    const grossBilled = inv.reduce((n, i) => n + (i.subtotalMinor as number), 0);
-    const discounts = inv.reduce((n, i) => n + (i.discountMinor as number), 0);
-    const pays = await d.collection('payments').aggregate([{ $match: { tenantId: a.tenantId, currency: q.currency, receivedOn: inMonth } }, { $group: { _id: null, n: { $sum: '$amountMinor' } } }]).toArray();
-    const refunds = await d.collection('refunds').aggregate([{ $match: { tenantId: a.tenantId, currency: q.currency, status: 'Paid', paidOn: inMonth } }, { $group: { _id: null, n: { $sum: '$amountMinor' } } }]).toArray();
-    const period = await balances(d, a.tenantId!, q.currency, { periodKey: q.period });
-    const toDate = await balances(d, a.tenantId!, q.currency, { upTo: `${q.period}-31` });
-    const accts = await d.collection('accounts').find({ tenantId: a.tenantId }).toArray();
-    const typeOf = (code: string) => accts.find((x) => x.code === code)?.type;
-    const sum = (rows: typeof period, pred: (c: string) => boolean, side: 'credit' | 'debit') =>
-      rows.filter((x) => pred(x.accountCode)).reduce((n, x) => n + (side === 'credit' ? x.creditMinor - x.debitMinor : x.debitMinor - x.creditMinor), 0);
-    const recognizedRevenue = sum(period, (c) => typeOf(c) === 'revenue', 'credit');
-    const operatingExpenses = sum(period, (c) => typeOf(c) === 'expense', 'debit');
-    const accountsReceivable = sum(toDate, (c) => c === '1100' || c === '1110', 'debit');
-    const cashCollected = ((pays[0]?.n as number) ?? 0) - ((refunds[0]?.n as number) ?? 0);
+    // One implementation of the certified finance metrics serves this report and the AI layer (spec §5.30).
+    const f = await computeFinance(db(req), req.actor!.tenantId!, q.period, q.currency as Currency);
+    const m = f.metrics;
     res.json({
       data: {
         period: q.period,
         currency: q.currency,
-        grossBilledMinor: grossBilled,
-        netBilledMinor: grossBilled - discounts,
-        cashCollectedMinor: cashCollected,
-        accountsReceivableMinor: accountsReceivable,
-        recognizedRevenueMinor: recognizedRevenue,
-        operatingExpensesMinor: operatingExpenses,
-        operatingResultMinor: recognizedRevenue - operatingExpenses,
+        grossBilledMinor: m['fin.grossBilled'],
+        netBilledMinor: m['fin.netBilled'],
+        cashCollectedMinor: m['fin.cashCollected'],
+        accountsReceivableMinor: m['fin.accountsReceivable'],
+        recognizedRevenueMinor: m['fin.recognizedRevenue'],
+        operatingExpensesMinor: m['fin.operatingExpenses'],
+        operatingResultMinor: m['fin.operatingResult'],
         metricVersion: 'finance-v1',
       },
     });
