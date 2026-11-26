@@ -10,6 +10,8 @@ export interface Staff {
 }
 
 export interface Hospital {
+  /** The platform owner (signed in, MFA done) — for creating a second hospital in isolation tests. */
+  owner: Client;
   admin: Client;
   branchId: string;
   branch2Id: string;
@@ -45,13 +47,13 @@ export async function setupHospital(h: Harness, roles: { key: string; role: stri
     if (me.body.data.mfa !== 'ok') await c.completeMfa();
     staff[key] = { c, id: inv.body.data.user.id };
   }
-  return { admin, branchId, branch2Id, staff };
+  return { owner, admin, branchId, branch2Id, staff };
 }
 
-export async function activate(h: Harness, token: string, email: string): Promise<Client> {
+export async function activate(h: Harness, token: string, email: string, tenant = 'hiil'): Promise<Client> {
   const c = new Client(h.app);
-  const acc = await c.agent.post('/api/v1/auth/accept-invite').send({ tenant: 'hiil', token, password: PW });
+  const acc = await c.agent.post('/api/v1/auth/accept-invite').send({ tenant, token, password: PW });
   expect(acc.status, JSON.stringify(acc.body)).toBe(200);
-  expect((await c.login(email, PW, 'hiil')).status).toBe(200);
+  expect((await c.login(email, PW, tenant)).status).toBe(200);
   return c;
 }

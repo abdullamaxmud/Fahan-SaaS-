@@ -21,4 +21,9 @@ export const totp = {
   newSecret: () => authenticator.generateSecret(),
   uri: (account: string, secret: string) => authenticator.keyuri(account, 'Fahan', secret),
   check: (code: string, secret: string) => authenticator.check(code, secret),
+  /** The 30-second step the code belongs to (within the allowed window), or null. Used to refuse a code twice. */
+  matchStep: (code: string, secret: string): number | null => {
+    const d = authenticator.checkDelta(code, secret);
+    return d === null ? null : Math.floor(Date.now() / 30_000) + d;
+  },
 };

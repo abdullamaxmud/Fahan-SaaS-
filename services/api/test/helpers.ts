@@ -65,7 +65,9 @@ export class Client {
       if (en.status !== 200) throw new Error(`enroll failed: ${en.status} ${JSON.stringify(en.body)}`);
       s = en.body.data.secret as string;
     }
-    const v = await this.post('/auth/mfa/verify', { code: authenticator.generate(s) });
+    let v = await this.post('/auth/mfa/verify', { code: authenticator.generate(s) });
+    // A code is accepted once; like a person, take the next one if this one was just used.
+    if (v.status === 401 && v.body?.error?.code === 'INVALID_MFA_CODE') v = await this.post('/auth/mfa/verify', { code: authenticator.clone({ epoch: Date.now() + 30_000 }).generate(s) });
     if (v.status !== 200) throw new Error(`verify failed: ${v.status} ${JSON.stringify(v.body)}`);
     return s;
   }

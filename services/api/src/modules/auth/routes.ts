@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
-import type { Collection, Db } from 'mongodb';
+import type { Collection, Db, ObjectId } from 'mongodb';
 import { z } from 'zod';
 import { requiresMfa } from '@fahan/policy';
 import { writeAudit } from '../../audit/audit';
@@ -36,6 +36,26 @@ export function authRoutes(deps: Deps): Router {
 
   function usersOf(req: Request): Collection {
     return req.actor!.kind === 'platform' ? data.control().collection('platform_users') : req.actor!.db!.collection('users');
+  }
+
+  const MAX_CODE_FAILURES = 5;
+  /**
+   * Accepts a TOTP code once (RFC 6238 §5.2: a used code is refused) and counts failures on the session itself,
+   * so rotating IP addresses does not help: after five wrong codes the session is ended.
+   */
+  async function consumeCode(req: Request, userId: ObjectId, blob: string, code: string, action: string): Promise<void> {
+    const step = totp.matchStep(code, decrypt(blob, config.dataKey));
+    const fresh = step !== null && (await usersOf(req).updateOne({ _id: userId, $or: [{ 'mfa.lastStep': { $exists: false } }, { 'mfa.lastStep': { $lt: step } }] }, { $set: { 'mfa.lastStep': step } })).modifiedCount === 1;
+    if (fresh) return;
+    const sessions = data.control().collection<SessionDoc & { mfaFailures?: number }>('sessions');
+    const s = await sessions.findOneAndUpdate({ _id: req.session!._id }, { $inc: { mfaFailures: 1 } }, { returnDocument: 'after' });
+    await audit(deps, req, { action, resource: 'session', outcome: 'failure', meta: { reused: step !== null } });
+    if ((s?.mfaFailures ?? 0) >= MAX_CODE_FAILURES) {
+      await sessions.deleteOne({ _id: req.session!._id });
+      await audit(deps, req, { action: 'auth.mfa.lockout', resource: 'session', outcome: 'deny', meta: { failures: s?.mfaFailures ?? 0 } });
+      throw new AppError(401, 'SESSION_REVOKED', 'Too many wrong codes. Sign in again');
+    }
+    throw Errors.invalidCode();
   }
 
   r.post('/login', limiter, async (req, res) => {
@@ -112,10 +132,8 @@ export function authRoutes(deps: Deps): Router {
     const users = usersOf(req);
     const user = await users.findOne({ _id: req.actor!.userId });
     const blob: string | undefined = s.mfaState === 'enroll' ? user?.mfa?.pendingSecret : user?.mfa?.secret;
-    if (!blob || !totp.check(code, decrypt(blob, config.dataKey))) {
-      await audit(deps, req, { action: 'auth.mfa.verify', resource: 'session', outcome: 'failure' });
-      throw Errors.invalidCode();
-    }
+    if (!blob) throw Errors.invalidCode();
+    await consumeCode(req, req.actor!.userId, blob, code, 'auth.mfa.verify');
     if (s.mfaState === 'enroll') {
       await users.updateOne(
         { _id: req.actor!.userId },
@@ -138,10 +156,7 @@ export function authRoutes(deps: Deps): Router {
     const user = await usersOf(req).findOne({ _id: req.actor!.userId });
     const blob: string | undefined = user?.mfa?.secret;
     if (!blob) throw Errors.conflict('MFA_NOT_ENROLLED', 'Set up an authenticator before making sensitive changes');
-    if (!totp.check(code, decrypt(blob, config.dataKey))) {
-      await audit(deps, req, { action: 'auth.reauth', resource: 'session', outcome: 'failure' });
-      throw Errors.invalidCode();
-    }
+    await consumeCode(req, req.actor!.userId, blob, code, 'auth.reauth');
     await data.control().collection<SessionDoc>('sessions').updateOne({ _id: req.session!._id }, { $set: { mfaAt: new Date() } });
     await audit(deps, req, { action: 'auth.reauth', resource: 'session', outcome: 'success' });
     res.json({ data: { reauthenticatedAt: new Date().toISOString() } });
