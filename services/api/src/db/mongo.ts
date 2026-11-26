@@ -180,6 +180,10 @@ export class Data {
       db.collection('api_clients').createIndex({ tenantId: 1, clientId: 1 }, { unique: true }),
       db.collection('api_tokens').createIndex({ tokenHash: 1 }, { unique: true }),
       db.collection('api_tokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+      // Data migration (Phase 7): a legacy record is imported once.
+      db.collection('migration_links').createIndex({ tenantId: 1, source: 1, legacyId: 1 }, { unique: true, name: 'one_import_per_legacy_id' }),
+      db.collection('migration_rows').createIndex({ batchId: 1, rowNo: 1 }),
+      db.collection('patients').createIndex({ 'migration.batchId': 1 }, { sparse: true }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),

@@ -41,10 +41,10 @@ const ConsentBody = z.object({
 });
 
 /** Above this score a new registration is blocked until staff confirm it is a different person. */
-const BLOCK_SCORE = 0.85;
+export const BLOCK_SCORE = 0.85;
 const SHOW_SCORE = 0.6;
 
-type DupInput = { keys: string[]; dob?: string; phone?: string; identifiers: { value: string }[] };
+export type DupInput = { keys: string[]; dob?: string; phone?: string; identifiers: { value: string }[] };
 
 function score(input: DupInput, p: Document): number {
   const ids = new Set((p.identifiers ?? []).map((i: { value: string }) => i.value.toLowerCase()));
@@ -59,7 +59,7 @@ function score(input: DupInput, p: Document): number {
 }
 
 /** Spec §4.1: deterministic + fuzzy candidate matching across the whole hospital (not just one branch). */
-async function findDuplicates(req: Request, input: DupInput, excludeId?: ObjectId) {
+export async function findDuplicates(req: Request, input: DupInput, excludeId?: ObjectId) {
   const a = req.actor!;
   const or: Document[] = [{ nameKeys: { $in: input.keys } }];
   if (input.phone) or.push({ phone: input.phone });
@@ -88,7 +88,7 @@ async function findDuplicates(req: Request, input: DupInput, excludeId?: ObjectI
     }));
 }
 
-const dupInput = (b: { givenName: string; middleName?: string; familyName: string; dob?: string; phone?: string; identifiers?: { value: string }[] }): DupInput => ({
+export const dupInput = (b: { givenName: string; middleName?: string; familyName: string; dob?: string; phone?: string; identifiers?: { value: string }[] }): DupInput => ({
   keys: nameKeys(b.givenName, b.middleName, b.familyName),
   dob: b.dob,
   phone: normalizePhone(b.phone),
