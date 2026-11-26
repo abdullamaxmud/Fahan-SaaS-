@@ -9,6 +9,7 @@ import { audit } from '../../middleware/audit';
 import { deny } from '../../middleware/authorize';
 import { CURRENCIES, type Currency } from '../accounting/ledger';
 import { METRICS, SUPPRESSION_THRESHOLD, hospitalTz, metricDef } from './metrics';
+import { insightRoutes } from './insights';
 import { assertKind, canSee, captureSnapshot, snapshotView, verifySnapshot, type SnapshotKind } from './snapshots';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM');
@@ -26,6 +27,7 @@ const csvCell = (v: unknown) => {
 export function intelRoutes(deps: Deps): Router {
   const r = Router();
   const db = (req: Request) => req.actor!.db!;
+  r.use('/insights', insightRoutes(deps));
 
   async function anyIntel(req: Request) {
     const p = req.actor!.perms as never;

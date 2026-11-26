@@ -170,6 +170,7 @@ export class Data {
       // Reporting & AI (spec §5.29–5.32): immutable, versioned metric snapshots.
       db.collection('metric_snapshots').createIndex({ tenantId: 1, kind: 1, period: 1, currency: 1, seq: 1 }, { unique: true, name: 'one_snapshot_version' }),
       db.collection('diagnoses').createIndex({ tenantId: 1, recordedAt: 1, code: 1 }),
+      db.collection('ai_insights').createIndex({ tenantId: 1, kind: 1, createdAt: -1 }),
       db.collection('care_plans').createIndex({ tenantId: 1, admissionId: 1, status: 1 }),
       db.collection('handovers').createIndex({ tenantId: 1, wardId: 1, createdAt: -1 }),
       db.collection('allergies').createIndex({ tenantId: 1, patientId: 1, status: 1 }),
